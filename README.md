@@ -13,7 +13,7 @@ http://davbucci.chez-alice.fr/index.php?argument=varie/queen/queen.inc&language=
 
 This repository contains the full source code of The Queen's Footsteps, written in AWS (Adventure Writing System). In order to compile it on your target system, you will need:
 
-- AWS2C in your repository (some scripts expect that this repository is a submodule of AWS2C)
+- AWS2C in your repository (many scripts here expect that this repository is a submodule of [AWS2C](https://github.com/DarwinNE/aws2c))
 - the GNU Make utility
 - A competent C compiler for your target platform (e.g. cc65 for the Commodore VIC20 or C64 or z88dk for the Sinclair ZX Spectrum)
 - A set of associate tools that usually depend on the platform. See the file /build/config.sh to have the list. Modify that file with the path of the different tools as they are installed in your system.
