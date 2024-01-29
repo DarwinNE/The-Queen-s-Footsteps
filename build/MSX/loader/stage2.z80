@@ -1,0 +1,51 @@
+
+include "msx.inc"
+
+org 0xf200
+
+start:
+	call TAPION
+	jr c, tape_error
+
+        ld bc, 4
+        ld hl, load_addr
+        call load_block
+
+        ld hl, (block_size)
+        ld c, l
+        ld b, h
+        ld hl, (load_addr)
+        push hl
+
+        call load_block
+
+        ; will return to the load addr
+        jp TAPIOF
+
+load_block:
+	push bc
+	push hl
+	call TAPIN
+	pop hl
+	pop bc
+	jr c, tape_error
+
+	ld (hl), a
+	inc hl
+
+	dec bc
+	ld a, b
+	or c
+	jr nz, load_block
+        ret
+
+tape_error:
+        ld a, 8
+	ld (BDRCLR), a
+	call CHGCLR
+
+        jr $
+
+load_addr: dw 0
+block_size: dw 0
+

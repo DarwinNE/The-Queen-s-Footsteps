@@ -1,0 +1,59 @@
+# Window size. 1=mini, 2=normal (default), 3=maxi
+
+ZOOM=1
+
+# One of: C64, C64M, SPECTRUM, MSX, PLUS4, PLUS4M, CPC. Leave empty to ask each time.
+
+MACHINE=
+
+# Default image path, leave empty for default.
+
+PATH=/Users/davidebucci/Desktop/Synchronized/Vintage/Computing/Commodore/C128/2018_09_30_aws_player/On_the_queens_footsteps
+
+# Default palette file in .act format (C64 Modes only!)
+
+PALETTE64=
+
+# Forces the multipaint window size regardless of ZOOM size. Empty to opt out. Take care!
+
+FORCEX=
+FORCEY=
+
+# For forced windows only, position target screen as a pixel distance from right/bottom.
+
+HADJUST=32
+VADJUST=32
+
+# If pathshow is 1 the file selector will default to "detailed" file list
+
+FILELIST=0
+
+# PNG export options, scale, horizontal and vertical border sizes.
+
+PNGSCALE=1
+PNGHBORD=64
+PNGVBORD=32
+
+# 1 = Force aspect ratio to 1:1
+
+NOASPECT=
+
+# Mousewheel custom ASCII keycodes
+# e.g. swap these if you want to invert zoom
+# Some valid examples:
+# 40 / 41 dither next - prev
+# 43 / 45 brush size bigger - smaller
+# 58 / 59 zoom in - out [default]
+# 10002 / 10003 scroll up - down
+
+WHEELUP=58
+WHEELDOWN=59
+
+# Mouse middle button ASCII keycode 
+# 44 = grab color [default]
+
+MIDDLEBUTTON=44
+
+# end
+
+

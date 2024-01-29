@@ -1,0 +1,25 @@
+                   NOTES FOR THE CAMBRIDGE Z88 VERSION OF
+
+                           THE QUEEN'S FOOTSTEPS
+
+                                Davide Bucci
+
+
+This version of the game runs on the Cambridge Z88. Three different formats are
+provided:
+
+- .epr file images containing applications, to be used with emulators.
+- .app and .apX files, as RAM-installable applications.
+- .BAS files, to be loaded in the BBC basic.
+
+Use the format that is most convenient for you!
+
+This port has been made possible by Dom and the awesome z88dk compiler.
+Many thanks to Jamie, for the useful feedback and the adaptation of the splash
+screen, too!
+
+If you have comments or remarks, feel free to write me at:
+
+davbucciNOSPAM@tiscali.it
+
+(email containing attachments will be automatically removed by my provider)

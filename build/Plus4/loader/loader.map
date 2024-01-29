@@ -1,0 +1,211 @@
+Modules list:
+-------------
+artnouveau-charset.o:
+    DATA              Offs=000000  Size=000400  Align=00001  Fill=0000
+plus4splash.o:
+    CODE              Offs=000000  Size=0000EE  Align=00001  Fill=0000
+splashscreen.o:
+    CODE              Offs=0000EE  Size=002713  Align=00001  Fill=0000
+loader.o:
+    CODE              Offs=002801  Size=000129  Align=00001  Fill=0000
+/Users/davidebucci/Desktop/Perso/cc65/lib/plus4.lib(addeqsp.o):
+    CODE              Offs=00292A  Size=000011  Align=00001  Fill=0000
+/Users/davidebucci/Desktop/Perso/cc65/lib/plus4.lib(callirq.o):
+    DATA              Offs=000400  Size=00001E  Align=00001  Fill=0000
+/Users/davidebucci/Desktop/Perso/cc65/lib/plus4.lib(callmain.o):
+    CODE              Offs=00293B  Size=000017  Align=00001  Fill=0000
+    DATA              Offs=00041E  Size=000004  Align=00001  Fill=0000
+/Users/davidebucci/Desktop/Perso/cc65/lib/plus4.lib(condes.o):
+    CODE              Offs=002952  Size=00000C  Align=00001  Fill=0000
+    DATA              Offs=000422  Size=000025  Align=00001  Fill=0000
+    ONCE              Offs=000000  Size=00000C  Align=00001  Fill=0000
+/Users/davidebucci/Desktop/Perso/cc65/lib/plus4.lib(crt0.o):
+    DATA              Offs=000447  Size=000005  Align=00001  Fill=0000
+    STARTUP           Offs=000000  Size=00005E  Align=00001  Fill=0000
+    LOWCODE           Offs=000000  Size=00003D  Align=00001  Fill=0000
+    INIT              Offs=000000  Size=00001A  Align=00001  Fill=0000
+/Users/davidebucci/Desktop/Perso/cc65/lib/plus4.lib(decsp2.o):
+    CODE              Offs=00295E  Size=00000D  Align=00001  Fill=0000
+/Users/davidebucci/Desktop/Perso/cc65/lib/plus4.lib(exehdr.o):
+    EXEHDR            Offs=000000  Size=00000C  Align=00001  Fill=0000
+/Users/davidebucci/Desktop/Perso/cc65/lib/plus4.lib(incsp2.o):
+    CODE              Offs=00296B  Size=000016  Align=00001  Fill=0000
+/Users/davidebucci/Desktop/Perso/cc65/lib/plus4.lib(irq.o):
+    CODE              Offs=002981  Size=000001  Align=00001  Fill=0000
+/Users/davidebucci/Desktop/Perso/cc65/lib/plus4.lib(loadaddr.o):
+    LOADADDR          Offs=000000  Size=000002  Align=00001  Fill=0000
+/Users/davidebucci/Desktop/Perso/cc65/lib/plus4.lib(pushax.o):
+    CODE              Offs=002982  Size=00001A  Align=00001  Fill=0000
+/Users/davidebucci/Desktop/Perso/cc65/lib/plus4.lib(status.o):
+/Users/davidebucci/Desktop/Perso/cc65/lib/plus4.lib(staxsp.o):
+    CODE              Offs=00299C  Size=00000B  Align=00001  Fill=0000
+/Users/davidebucci/Desktop/Perso/cc65/lib/plus4.lib(zerobss.o):
+    CODE              Offs=0029A7  Size=000023  Align=00001  Fill=0000
+/Users/davidebucci/Desktop/Perso/cc65/lib/plus4.lib(zeropage.o):
+    ZEROPAGE          Offs=000000  Size=00001A  Align=00001  Fill=0000
+
+
+Segment list:
+-------------
+Name                   Start     End    Size  Align
+----------------------------------------------------
+ZEROPAGE              000002  00001B  00001A  00001
+LOADADDR              000FFF  001000  000002  00001
+EXEHDR                001001  00100C  00000C  00001
+STARTUP               00100D  00106A  00005E  00001
+LOWCODE               00106B  0010A7  00003D  00001
+CODE                  0010A8  003A71  0029CA  00001
+ONCE                  003A72  003A7F  00000E  00001
+RODATA                003A80  003A81  000002  00001
+DATA                  003A82  003ECD  00044C  00001
+INIT                  003ECE  003EE7  00001A  00001
+
+
+Exports list by name:
+---------------------
+ST                        000090 RLZ    __BSS_RUN__               003EE8 RLA    
+__BSS_SIZE__              000000 REA    __CONSTRUCTOR_COUNT__     000001 REA    
+__CONSTRUCTOR_TABLE__     003A7E RLA    __DESTRUCTOR_COUNT__      000001 REA    
+__DESTRUCTOR_TABLE__      003A80 RLA    __EXEHDR__                000001 REA    
+__HEADER_LAST__           00100D RLA    __HIMEM__                 00EFFF REA    
+__INTERRUPTOR_COUNT__     000000 REA    __INTERRUPTOR_TABLE__     003A82 RLA    
+__LOADADDR__              000001 REA    __MAIN_SIZE__             00DDF2 REA    
+__MAIN_START__            00100D RLA    __STACKSIZE__             000200 REA    
+__STARTUP__               000001 REA    _bg1                      001196 RLA    
+_bg2                      001197 RLA    _border                   001198 RLA    
+_color                    0030D9 RLA    _doload                   0038A9 RLA    
+_luma                     0034C1 RLA    _main                     00118D RLA    
+_screen                   001199 RLA    addeq0sp                  0039D2 RLA    
+callirq_y                 003E84 RLA    callmain                  0039E3 RLA    
+charset                   003A82 RLA    decsp2                    003A06 RLA    
+doneirq                   003A29 RLA    donelib                   0039FA RLA    
+incsp2                    003A1B RLA    initirq                   003A29 RLA    
+initlib                   003A72 RLA    irq_done                  003A29  LAI   
+irq_init                  003A29  LAI   ptr1                      00000A RLZ    
+pushax                    003A2E RLA    sp                        000002 RLZ    
+sreg                      000004 RLZ    stax0sp                   003A44 RLA    
+zerobss                   003A4F RLA    
+
+
+Exports list by value:
+----------------------
+__BSS_SIZE__              000000 REA    __INTERRUPTOR_COUNT__     000000 REA    
+__STARTUP__               000001 REA    __CONSTRUCTOR_COUNT__     000001 REA    
+__DESTRUCTOR_COUNT__      000001 REA    __EXEHDR__                000001 REA    
+__LOADADDR__              000001 REA    sp                        000002 RLZ    
+sreg                      000004 RLZ    ptr1                      00000A RLZ    
+ST                        000090 RLZ    __STACKSIZE__             000200 REA    
+__MAIN_START__            00100D RLA    __HEADER_LAST__           00100D RLA    
+_main                     00118D RLA    _bg1                      001196 RLA    
+_bg2                      001197 RLA    _border                   001198 RLA    
+_screen                   001199 RLA    _color                    0030D9 RLA    
+_luma                     0034C1 RLA    _doload                   0038A9 RLA    
+addeq0sp                  0039D2 RLA    callmain                  0039E3 RLA    
+donelib                   0039FA RLA    decsp2                    003A06 RLA    
+incsp2                    003A1B RLA    irq_done                  003A29  LAI   
+doneirq                   003A29 RLA    initirq                   003A29 RLA    
+irq_init                  003A29  LAI   pushax                    003A2E RLA    
+stax0sp                   003A44 RLA    zerobss                   003A4F RLA    
+initlib                   003A72 RLA    __CONSTRUCTOR_TABLE__     003A7E RLA    
+__DESTRUCTOR_TABLE__      003A80 RLA    charset                   003A82 RLA    
+__INTERRUPTOR_TABLE__     003A82 RLA    callirq_y                 003E84 RLA    
+__BSS_RUN__               003EE8 RLA    __MAIN_SIZE__             00DDF2 REA    
+__HIMEM__                 00EFFF REA    
+
+
+Imports list:
+-------------
+ST (status.o):
+    crt0.o                    plus4/crt0.s(14)
+__BSS_RUN__ ([linker generated]):
+    zerobss.o                 common/zerobss.s(8)
+__BSS_SIZE__ ([linker generated]):
+    zerobss.o                 common/zerobss.s(8)
+__CONSTRUCTOR_COUNT__ ([linker generated]):
+    condes.o                  runtime/condes.s(18)
+__CONSTRUCTOR_TABLE__ ([linker generated]):
+    condes.o                  runtime/condes.s(18)
+__DESTRUCTOR_COUNT__ ([linker generated]):
+    condes.o                  runtime/condes.s(19)
+__DESTRUCTOR_TABLE__ ([linker generated]):
+    condes.o                  runtime/condes.s(19)
+__EXEHDR__ (exehdr.o):
+    [linker generated]        plus4_p.cfg(6)
+__HEADER_LAST__ ([linker generated]):
+    [linker generated]        plus4_p.cfg(14)
+__HIMEM__ ([linker generated]):
+    [linker generated]        plus4_p.cfg(14)
+__INTERRUPTOR_COUNT__ ([linker generated]):
+    callirq.o                 runtime/callirq.s(36)
+    crt0.o                    plus4/crt0.s(11)
+__INTERRUPTOR_TABLE__ ([linker generated]):
+    callirq.o                 runtime/callirq.s(36)
+__LOADADDR__ (loadaddr.o):
+    [linker generated]        plus4_p.cfg(5)
+__MAIN_SIZE__ ([linker generated]):
+    crt0.o                    plus4/crt0.s(12)
+__MAIN_START__ ([linker generated]):
+    crt0.o                    plus4/crt0.s(12)
+    [linker generated]        plus4_p.cfg(14)
+__STACKSIZE__ ([linker generated]):
+    crt0.o                    plus4/crt0.s(13)
+    [linker generated]        plus4_p.cfg(14)
+__STARTUP__ (crt0.o):
+    plus4splash.o             plus4splash.s(13)
+_bg1 (splashscreen.o):
+    plus4splash.o             plus4splash.s(18)
+_bg2 (splashscreen.o):
+    plus4splash.o             plus4splash.s(19)
+_border (splashscreen.o):
+    plus4splash.o             plus4splash.s(17)
+_color (splashscreen.o):
+    plus4splash.o             plus4splash.s(15)
+_doload (loader.o):
+    plus4splash.o             plus4splash.s(183)
+_luma (splashscreen.o):
+    plus4splash.o             plus4splash.s(16)
+_main (plus4splash.o):
+    callmain.o                runtime/callmain.s(11)
+_screen (splashscreen.o):
+    plus4splash.o             plus4splash.s(14)
+addeq0sp (addeqsp.o):
+    plus4splash.o             plus4splash.s(183)
+callirq_y (callirq.o):
+    crt0.o                    plus4/crt0.s(9)
+callmain (callmain.o):
+    crt0.o                    plus4/crt0.s(10)
+charset (artnouveau-charset.o):
+    loader.o                  loader.s(20)
+decsp2 (decsp2.o):
+    plus4splash.o             plus4splash.s(183)
+doneirq (irq.o):
+    callirq.o                 runtime/callirq.s(38)
+donelib (condes.o):
+    crt0.o                    plus4/crt0.s(9)
+incsp2 (incsp2.o):
+    plus4splash.o             plus4splash.s(183)
+initirq (irq.o):
+    callirq.o                 runtime/callirq.s(37)
+initlib (condes.o):
+    crt0.o                    plus4/crt0.s(9)
+ptr1 (zeropage.o):
+    zerobss.o                 common/zerobss.s(9)
+    loader.o                  loader.s(22)
+    plus4splash.o             plus4splash.s(11)
+pushax (pushax.o):
+    callmain.o                runtime/callmain.s(11)
+sp (zeropage.o):
+    pushax.o                  runtime/pushax.s(8)
+    staxsp.o                  runtime/staxsp.s(8)
+    incsp2.o                  runtime/incsp2.s(8)
+    decsp2.o                  runtime/decsp2.s(8)
+    crt0.o                    /Users/davidebucci/Desktop/Perso/cc65/asminc/zeropage.inc(11)
+    addeqsp.o                 runtime/addeqsp.s(8)
+    plus4splash.o             plus4splash.s(10)
+sreg (zeropage.o):
+    plus4splash.o             plus4splash.s(10)
+stax0sp (staxsp.o):
+    plus4splash.o             plus4splash.s(183)
+zerobss (zerobss.o):
+    crt0.o                    plus4/crt0.s(10)
+

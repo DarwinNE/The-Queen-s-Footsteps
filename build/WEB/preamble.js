@@ -1,0 +1,1 @@
+import {js_getch,js_writech, js_waitkey} from "./keyp.js";

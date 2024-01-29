@@ -1,0 +1,70 @@
+take brochure
+s
+s
+x door
+take grease
+d
+talk to clerk
+read telegram
+s
+s
+w
+talk to operator
+e
+n
+e
+e
+s
+x gate
+n
+w
+w
+w
+n
+talk employee
+s
+w
+n
+x office
+talk to officer
+take paper
+n
+n
+put brochure in door
+e
+take quill
+x dustbin
+take sheet
+w
+s
+s
+s
+s
+talk to clerk
+x sheet
+n
+e
+n
+give order to employee
+s
+w
+n
+n
+n
+n
+n
+e
+e
+search 12
+w
+w
+s
+s
+s
+s
+e
+e
+n
+talk clerk
+
+talk clerk

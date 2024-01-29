@@ -1,0 +1,183 @@
+TEST 1: Part 1, "Examine carefully every object. Talk with people. Smell. Draw a map."
+-------------------------------------------------------------------------------
+restart
+y
+
+hint
+
+
+TEST 2: Part 1, "A closed door will not stop Emilia, if equipped with a (slippery) card."
+-------------------------------------------------------------------------------
+restart
+y
+
+take brochure
+s
+s
+x door
+take grease
+d
+talk to clerk
+read telegram
+hint
+
+TEST 3: Part 2, "You know, your father can still give you good hints."
+-------------------------------------------------------------------------------
+shibboleth fanfaluch
+
+talk father
+hint
+
+TEST 4: Part 2, "Try to meet people, gather information and explore."
+-------------------------------------------------------------------------------
+shibboleth fanfaluch
+
+talk father
+show letter to father
+hint
+
+TEST 5: Part 2, "Everything is a matter of finding the right book, hoping it's complete!"
+-------------------------------------------------------------------------------
+shibboleth fanfaluch
+
+talk father
+show letter to father
+take car
+s
+s
+talk to Temistocle
+
+n
+n
+e
+e
+s
+s
+s
+
+n
+n
+n
+e
+e
+take tram
+
+
+
+w
+w
+n
+e
+try Fibonacci
+n
+x statue
+hint
+
+TEST 6: Part 3, "Use the force, Emilia!"
+-------------------------------------------------------------------------------
+shibboleth lumasson
+
+hint
+
+TEST 7: Part 3, "Old artefacts require care."
+-------------------------------------------------------------------------------
+shibboleth lumasson
+
+x work in progress
+x box
+take lamp
+take rope
+turn on lamp
+d
+e
+e
+e
+x garbage
+take crowbar
+w
+w
+demolish wall
+s
+e
+hint
+
+TEST 8: Part 3, "Prometheus' fate was a terrible one, but he gifted us interesting things."
+-------------------------------------------------------------------------------
+shibboleth lumasson
+
+x work in progress
+x box
+take lamp
+take rope
+turn on lamp
+d
+e
+e
+e
+x garbage
+take crowbar
+w
+w
+demolish wall
+s
+e
+s
+s
+e
+n
+take lantern
+e
+take stick
+w
+n
+n
+w
+n
+e
+take grease
+w
+s
+d
+pour oil on mechanism
+turn crank
+u
+e
+s
+tie rope to the grate
+d
+s
+s
+hint
+
+TEST 9: Part 4, "Walls may not be as they seem."
+-------------------------------------------------------------------------------
+SHIBBOLETH BRUTCOMALANEUIT
+
+hint
+
+
+TEST 10: Part 4, "Protection is the key."
+-------------------------------------------------------------------------------
+SHIBBOLETH BRUTCOMALANEUIT
+touch walls
+push walls
+w
+n
+take sandals
+s
+hint
+
+
+TEST 11: You don't need that anymore.
+-------------------------------------------------------------------------------
+SHIBBOLETH BRUTCOMALANEUIT
+touch walls
+push walls
+w
+n
+take sandals
+s
+wear goggles
+pull lever
+up
+hint

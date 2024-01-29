@@ -1,0 +1,18 @@
+                   NOTES FOR THE ZX SPECTRUM VERSION OF
+
+                           THE QUEEN'S FOOTSTEPS
+
+                                Davide Bucci
+
+
+This archive contains different versions of the game for the ZXSpectrum 48K
+(as three different .tap files) and for the +3 (as a disk image).
+The main advantage of the +3 version is that it can save and load the game,
+while with the 48K you must rely on the passwords at the end of each part of
+the game.
+
+If you have comments or remarks, feel free to write me at:
+
+davbucciNOSPAM@tiscali.it
+
+(email containing attachments will be automatically removed by my provider)

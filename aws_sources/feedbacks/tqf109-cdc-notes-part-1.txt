@@ -1,0 +1,84 @@
+==
+TQF : v1.0.9 : PART.1
+
+CDC notes, mostly highly unimportant:-
+
+1) Hotel room:-
+
+This may be part of the puzzle, but `brochure` implies a larger item than a nice stiff calling-card which can be smeared with grease. To me a brochure in this context would be no smaller than and A4 sheet folded into 3 pages.
+
+It could be `A contact card advertising the hotel` or left as it is with, perhaps, the `x brochure` description along the lines of `A brochure advertising the hotel printed on a contact card made from stiff cardboard`
+
+Perhaps allow `card` as an alias for `brochure` here ?
+
+DB. Yes, it is possible, as "card" is used for Rovelli's address, but you can't have it in your inventory at this point of the game.
+
+2) An oddity with the Hotel clerk after taking a certain route:-
+
+After going S->E->E->S-> to gate and back to via Roma, 
+then S->W-> and talking to operator to send message
+then N->N-> and talking to employee
+then N->E->N-> back to hotel
+
+`talk to clerk` gives the "Your room is already paid... ` message and a normal prompt
+
+(I was expecting another telegram )
+so I try to leave by typing S
+and I then get the "Ma'am, you received an urgent telgram"... message
+
+DB. Probably the easiest thing is to change slightly the message. Instead of:
+
+The clerk recognises you and waves a hand, saying: "Ma'am, you received an 
+urgent telegram!"
+
+I can write:
+
+The clerk waves a hand, saying: "Ma'am, you received an 
+urgent telegram!"
+
+as it is the "recognizes you" part that sounds strange if you just talked to him.
+
+
+3) The `room is paid` message:-
+`paying one of the best hotels` --could do with a `for`-> `paying for one of the best hotels`
+
+
+4) First chat with clerk:-
+
+If you talk to the clerk and got S-> without reading the telegram, you get the `No need to wander...` message for S,E,W directions until, you do read it - I suppose this is deliberate.
+
+DB. Yes. I wanted to be sure you read the message. After all, you don't have anything specific to do before.
+
+5) Archives:-
+
+`Archives employee`  --*maybe* better, not much in it --> `Archive empoyee`
+
+
+6) In small office:-
+
+`Dustbin` is usually used to decribe a big refuse bin rather than an office one,
+`wastebin` might be a better long word, with `bin` as an alias.
+
+DB: Well spot!!! Definitely, wastebin would be a better term.
+
+If you try `write letter` before getting the headed paper, it says
+`you need something to write` ... should this be 
+`you need something to write on` ?
+
+DB: Ok.
+
+
+7) Harbour Officer:-
+
+I think there is something funny here... Once I've got the letter in the bin
+restored by the emporium clerk I seem to have a problem getting the Officer 
+to do his searching... I wander around, talk to everyone, go back... nothing...
+then I try the same thing again and it works, so I can get some headed paper.
+
+... maybe I'm accidentally hitting some other trigger in trying to ask everyone
+things and wandering about, but I seem to remember wondering why he suddenly got
+co-operative way back when playing originally, so I thought I'd mention it.
+
+DB: You get the idea of stealing the headed paper by looking at the officer table. However, I noticed the game did not recognize "take headed paper" when the officer is away, but just "take paper". The reason was that the term HEADED was mistakenly recognized with a wrong code.
+
+==

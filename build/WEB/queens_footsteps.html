@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en-US">
+ 
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css?family=Cormorant+Garamond">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>The Queen's Footsteps</title>
+    <style>
+        body {
+            background-color: black;
+            font-size: 125%;
+            font-family: "Cormorant Garamond", "Garamond", 
+                "Times", "Times New Roman", serif; 
+            line-height : 140%;
+            text-align: justify;
+            color: #FFFFFF;
+        }
+        p    {color: #9ebbc7;}
+        h1   {color: #b6b478;
+            font-size: 200%;
+            text-align: center;
+        }
+        h2   {color: #b6b478;
+            font-size: 140%;
+            text-align: center;
+        }
+        .container {
+            justify-content: space-between;
+            flex-direction: column;
+            display: flex;
+        }
+        .container .btn-holder {
+            justify-content: flex-end;
+            display: flex;
+        }
+  
+        #terminal {
+            background-color: black;
+            margin-left: auto;
+            margin-right: auto;
+            padding: 1em 1em 0em 1em;
+            max-width: 35em;
+            cursor: none;
+            caret-color: transparent;
+        }
+        #terminal:focus {
+            outline-width: 2px;
+            outline-style: solid;
+            outline-color: #222222;
+        }
+        .inputtxt {
+            color: green;
+            font-style: italic;
+        }
+        .evidence1 {
+            color: #B05b4c;
+            font-weight: 700;
+        }
+        .evidence2 {
+            color: #b6b478;
+            font-weight: bold;
+        }
+        .evidence3 {
+            color: salmon;
+        }
+        img {
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+            max-width: 35em;
+            width: 100%;
+        }
+        button {
+            background-color: #111111;
+            border: 1px solid #555555;
+            color: white;
+            padding: 1em 1em;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 80%;
+            margin: 4px 2px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #333333;
+        }
+        .btn-toolbar {
+            max-width: 45em;
+            display: none;
+            margin-left: auto;
+            margin-right: auto;
+            align-content:center;
+            justify-content: center;
+            text-align: center;
+        }
+        </style>
+</head>
+ 
+<body>
+<script src="keyp.js" type="module"></script>
+
+<img src="banner.jpg">
+<h1>The Queen's Footsteps</h1>
+<h2>by Davide Bucci 2019-2021</h2>
+<p id="terminal" contenteditable="true">[type something]</p>
+
+</body> 
+ 
+</html>

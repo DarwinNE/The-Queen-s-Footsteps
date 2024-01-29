@@ -1,0 +1,1880 @@
+AWS
+VERSIONE
+3.0
+0
+7
+7
+0
+The Queen's Footsteps, parts 3,4
+Davide Bucci
+Version 1.1.1, Oct. 2019-Dec. 2020
+
+1
+
+0
+0
+103
+FALSE
+0
+0
+CONDIZIONIHI
+IF AT 104 THEN CSET 1 3 PRESSKEY GOTO 60 ENDIF Print the introduction and wait a key. *** Corrected in v. 1.1.
+IF RES? 121 AND RES? 122 THEN MESS 601 ENDIF Can not move in the dark
+IF AT 73 AND RES? 109 THEN MESS 636 PRESSKEY SET 109 MESS 637 PRESSKEY MESS 638 PRESSKEY SET 111 MESS 667 CSET 1 4  GOTO 76 ENDIF Assist to cerimonial. *** Corrected in v. 1.1
+IF AT 78 AND RES? 110 THEN MESS 643 SET 110 ENDIF Torch extinguishes behind you.
+IF AT 81 AND RES? 113 THEN MESS 681 SET 113 ENDIF Enter the studio and hear Raligotto and Pizzarrotti talking.
+IF AT 80 AND RES? 114 THEN MESS 682 SET 114 ENDIF Enter library and secret door closes.
+CONDIZIONILOW
+if verb 70 and noun 409 then mess 518 wait endif
+if verb 73 then quit endif
+if verb 74 or verb 0 and noun 72 then inve wait endif
+if verb 987 then restart endif
+if verb 110 then look wait endif
+IF VERB 100 OR VBNOEQ 0 AND NOUN 80 THEN nord WAIT ENDIF  VAI  NORD
+IF VERB 100 OR VBNOEQ 0 AND NOUN 81 THEN sud WAIT ENDIF  VAI  SUD
+IF VERB 100 OR VBNOEQ 0 AND NOUN 82 THEN est WAIT ENDIF  VAI  EST
+IF VERB 100 OR VBNOEQ 0 AND NOUN 83 THEN ovest WAIT ENDIF  VAI OVEST
+IF VERB 100 OR VBNOEQ 0 AND NOUN 84 THEN alto WAIT ENDIF  VAI ALTO
+IF VERB 100 OR VBNOEQ 0 AND NOUN 85 THEN basso WAIT ENDIF  VAI BASSO
+IF verb 201 THEN MESS 400 WAIT ENDIF Sleep.
+IF VERB 211 OR VERB 406 OR VERB 67 THEN mess 237 WAIT ENDIF Touch..., Drink..., Wash...
+IF verb 12 and noun 10 THEN MESS 237 WAIT ENDIF Open window -> no.
+IF NOUN 9 OR NOUN 122 AND VERB 70 THEN MESS 307 WAIT ENDIF Examine key/goggles.
+IF verb 1000 then MESS 998 WAIT ENDIF XYZZY.
+IF verb 400 THEN mess 504 WAIT ENDIF Curse.
+IF VERB 70 AND NOUN 501 AND AVAI 501 THEN MESS 609 WAIT ENDIF Examine crowbar.
+IF VERB 406 AND NOUN 23 AND RES? 109 THEN MESS 237 WAIT ENDIF Knock walls. No reason for that.
+IF VERB 143 AND ROOMGT 61 AND ROOMLT 78 THEN MESS 608 WAIT ENDIF Smell underground.
+IF VERB 143 AND ROOMGT 77 THEN MESS 907 WAIT ENDIF Smell incense. *** Version 1.1
+IF VERB 143 THEN mess 997 WAIT ENDIF Smell...
+IF AT 74 OR AT 77 OR AT 76 AND VERB 50 AND NOUN 240 THEN MESS 698 WAIT ENDIF Take skulls/bones.
+IF VERB 70 AND NOUN 506 AND AVAI 506 THEN MESS 696 WAIT ENDIF Examine torch.
+IF VERB 230 AND NOUN 233 THEN RESETALL TO 172 1500 TO 173 1500 SET 107 SET 109 SET 111 TO 506 76 TO 502 1500 CSET 1 4 GOTO 76 WAIT ENDIF Password for part 4 *** Corrected in v. 1.1
+IF ROOMGT 61 AND ROOMLT 66 AND VERB 70 AND NOUN 168 THEN MESS 646 WAIT ENDIF Examine channel/water
+IF VERB 244 AND NOUN 507 AND AVAI 507 THEN MESS 632 WAIT ENDIF Ignite stick
+IF NOUN 6 AND NO2EQ 507 AND AVAI 507 THEN MESS 632 WAIT ENDIF Ignite stick (a hack to allow for "light stick")
+IF VERB 55 AND NO1EQ 164 AND NO2EQ 507 AND AVAI 507 THEN MESS 632 WAIT ENDIF Set fire to stick.
+IF VERB 244 AND NOUN 507 AND AVAI 509 THEN TO 509 0 TO 506 1500 MESS 628 WAIT ENDIF Ignite greasy stick.
+IF NOUN 6 AND NO2EQ 507 AND AVAI 509  THEN TO 509 0 TO 506 1500 MESS 628 WAIT ENDIF Light greasy stick (a hack to allow for "light stick")
+IF VERB 55 AND NO1EQ 164 AND NO2EQ 507 AND AVAI 509 THEN TO 509 0 TO 506 1500 MESS 628 WAIT ENDIF Set fire to stick.
+IF VERB 69 AND NOUN 502 AND ADVE 214 AND AVAI 502 AND RES? 122 THEN mess 604 set 122 WAIT ENDIF Turn on the lamp.
+IF ROOMGT 61 AND VERB 69 AND NOUN 502 AND ADVE 215 AND SET? 122 THEN mess 402 WAIT ENDIF Turn off the lamp.
+IF VERB 69 AND NOUN 502 AND AVAI 502 AND ADVE 215 AND SET? 122 THEN mess 605 RESE 122 WAIT ENDIF Turn off the lamp.
+IF VERB 70 AND NOUN 502 AND AVAI 502 AND SET? 122 THEN MESS 602 WAIT ENDIF Examine acetylene lamp, on.
+IF VERB 70 AND NOUN 502 AND AVAI 502 THEN MESS 603 WAIT ENDIF Examine acetylene lamp, off.
+IF VERB 70 AND NOUN 505 AND AVAI 505 THEN MESS 621 WAIT ENDIF Examine lantern.
+IF VERB 411 AND NOUN 505 AND AVAI 505 THEN MESS 704 WAIT ENDIF Extract ... lantern.
+IF VERB 70 AND NOUN 503 THEN MESS 697 WAIT ENDIF Examine matches.
+IF ROOMGT 61 AND ROOMLT 68 OR AT 71 OR AT 75 OR AT 72 AND VERB 70 AND NOUN 23 THEN MESS 650 WAIT ENDIF Examine walls.
+IF VERB 70 AND NOUN 500 THEN MESS 657 WAIT ENDIF Examine rope, tied to the grate.
+IF VERB 70 AND NOUN 511 AND AVAI 511 THEN MESS 670 WAIT ENDIF Examine sandals.
+IF VERB 15 OR VERB 55 AND NO1EQ 505 AND NO2EQ 504 AND AVAI 505 AND AVAI 504 THEN MESS 622 SET 104 WAIT ENDIF Use the lantern grease with the machine
+IF VERB 15 OR VERB 55 AND NO1EQ 507 AND NO2EQ 504 AND AVAI 509 AND AVAI 504 THEN MESS 911 WAIT ENDIF *** Version 1.1: Use the stick with the machine
+IF AVAI 507 AND VERB 70 AND NOUN 507 THEN MESS 694 WAIT ENDIF
+IF AVAI 509 AND VERB 70 AND NOUN 507 THEN MESS 695 WAIT ENDIF
+IF VERB 70 THEN MESS 996 WAIT ENDIF Examine (without a known object).
+IF VERB 50 AND NOUN 500 AND SET? 106 THEN MESS 626 WAIT ENDIF Try to get the rope attached to the grate
+IF ROOMGT 61 AND ROOMLT 80 AND VERB 55 AND NOUN 502 THEN MESS 402 WAIT ENDIF Drop torch, but you need it!
+IF VERB 55 AND NOUN 507 AND AVAI 509 THEN MESS 912 WAIT ENDIF *** Version 1.1 - Drop greasy stick.
+IF VERB 50 AND NO1GT 499 AND NO1LT 521 THEN GET NO1 OKAY ENDIF Take an object.
+IF VERB 55 AND NO1GT 499 AND NO1LT 521 THEN DROP NO1 OKAY ENDIF Drop an object.
+IF VERB 210 THEN MESS 231 WAIT ENDIF Pray
+IF EQU? 1 3 AND NOUN 408 AND RES? 116 THEN MESS 649 WAIT ENDIF Hint 1 ** Corrected in v. 1.1
+IF EQU? 1 3 AND NOUN 408 AND RES? 104 THEN MESS 668 WAIT ENDIF Hint 2
+IF NOUN 408 AND EQU? 1 3 AND RES? 107 THEN MESS 669 WAIT ENDIF Hint 3
+IF EQU? 1 4 AND NOUN 408 AND RES? 118 THEN MESS 699 WAIT ENDIF Hint 4 ** Corrected in v. 1.1
+IF EQU? 1 4 AND NOUN 408 AND RES? 112 THEN MESS 700 WAIT ENDIF Hint 5 ** Corrected in v. 1.1
+IF EQU? 1 4 AND NOUN 408 THEN MESS 701 WAIT ENDIF No hints            ** Corrected in v. 1.1
+IF NOUN 408 THEN MESS 701 WAIT ENDIF No hints
+IF VERB 120 AND NOUN 122 AND AVAI 173 THEN WEAR 173 OKAY ENDIF Wear goggles
+IF VERB 121 AND NOUN 122 THEN UNWEAR 173 OKAY ENDIF Unwear goggles
+IF VERB 78 THEN MESS 237 WAIT ENDIF Break... destroy... *** Version 1.1.1
+IF VERB 988 THEN LOAD WAIT ENDIF Load
+IF VERB 989 THEN SAVE WAIT ENDIF Save
+IF VERB 76 THEN MESS 108 WAIT ENDIF Exit/Quit -> use "bye"
+CONDIZIONILOCALI
+60
+IF VERB 70 AND NOUN 181  THEN MESS 261 WAIT ENDIF Examine car
+60
+IF VERB 56 THEN MESS 906 WAIT ENDIF Version 1.1: Drive car -> You are here to find the sandals.
+60
+IF VERB 100 OR VBNOEQ 0 AND NOUN 85 AND SET? 102 THEN BASSO RESE 121 WAIT ENDIF  VAI BASSO
+60
+IF VERB 70 AND NOUN 113 AND RES? 102 THEN MESS 614 SETCONN 60 6 62 TO 503 60 SET 102 WAIT ENDIF Examine work in progress
+60
+IF VERB 70 AND NOUN 113 THEN MESS 614 WAIT ENDIF Examine work in progress, box found
+60
+IF VERB 70 AND NOUN 51 AND SET? 102 AND RES? 103 THEN MESS 615 TO 500 60 TO 502 60 SET 103 WAIT ENDIF Examine box.
+60
+IF VERB 70 AND NOUN 181 THEN MESS 261 WAIT ENDIF Examine car.
+60
+IF VERB 50 OR VERB 56 AND NOUN 181 THEN MESS 237 WAIT ENDIF Take car.
+60
+IF VERB 70 AND NO1EQ 502 AND NO2EQ 58 THEN MESS 644 WAIT ENDIF Examine lamp post.
+60
+IF VERB 70 AND NOUN 99 THEN MESS 76 WAIT ENDIF Examine tramway/rails
+60
+IF VERB 143 THEN MESS 72 WAIT ENDIF Smell
+61
+IF VERB 69 AND NOUN 71 THEN MESS 600 WAIT ENDIF Pull the handle.
+61
+IF VERB 70 AND NOUN 4 THEN MESS 33 WAIT ENDIF Examine the iron gate
+61
+IF VERB 70 AND NOUN 6 OR NOUN 506 THEN MESS 645 WAIT ENDIF Examine lights/torches
+62
+IF VERB 100 OR VBNOEQ 0 AND NOUN 84 THEN ALTO SET 121 WAIT ENDIF  VAI ALTO
+63
+IF VERB 78 AND NOUN 23 AND AVAI 501 AND RES? 116 THEN MESS 606 SETCONN 63 2 66 SET 116 WAIT ENDIF Demolish south wall.
+63
+IF VERB 78 AND NOUN 23 AND NOTAVAI 501 THEN MESS 616 WAIT ENDIF Demolish south wall.
+63
+IF VERB 78 AND NO1EQ 81 AND NO2EQ 23 AND AVAI 501 AND RES? 116 THEN MESS 606 SETCONN 63 2 66 SET 116 WAIT ENDIF Demolish south wall.
+63
+IF VERB 78 AND NO1EQ 81 AND NO2EQ 23 AND NOTAVAI 501 THEN MESS 616 WAIT ENDIF Demolish south wall.
+63
+IF VERB 15 AND NOUN 501 AND NO2EQ 23 AND AVAI 501 AND RES? 116 THEN MESS 606 SETCONN 63 2 66 SET 116 WAIT ENDIF *** Version 1.1: use crowbar with wall
+63
+IF VERB 69 AND NOUN 23 THEN MESS 620 WAIT ENDIF Push the wall.
+63
+IF VERB 70 AND NOUN 23 OR NOUN 81 AND RES? 116 THEN MESS 607 WAIT ENDIF Examine (south) wall.
+64
+IF VERB 70 AND NOUN 183 THEN MESS 647 WAIT ENDIF Examine pipe.
+64
+IF VERB 70 AND NOUN 239 THEN MESS 611 WAIT ENDIF Examine pile of garbage.
+64
+IF VERB 50 AND NOUN 5 AND AVAI 507 THEN MESS 633 TO 507 0 TO 509 1500 WAIT ENDIF Take grease, have the stick.
+64
+IF VERB 15 AND NO1EQ 507 AND NO2EQ 5 AND AVAI 507 THEN MESS 633 TO 507 0 TO 509 1500 WAIT ENDIF *** Version 1.1.1. Use stick with grease.
+64
+IF VERB 50 AND NOUN 5 THEN MESS 634 WAIT ENDIF Take grease, no stick.
+64
+IF VERB 70 AND NOUN 5 THEN MESS 635 WAIT ENDIF Examine grease blob.
+65
+IF VERB 70 AND NOUN 239 AND RES? 101 THEN MESS 610 SET 101 TO 501 65 WAIT ENDIF Find crowbar.
+65
+IF VERB 70 AND NOUN 239 THEN MESS 611 WAIT ENDIF Examine pile of garbage, crowbar already found.
+65
+IF VERB 70 AND NOUN 243 THEN MESS 648 WAIT ENDIF Examine grate.
+66
+IF VERB 70 AND NOUN 241 THEN MESS 651 WAIT ENDIF Examine manhole.
+66
+IF VERB 70 AND NOUN 245 THEN MESS 652 WAIT ENDIF Examine stepladder.
+66
+IF VERB 70 AND NOUN 159 THEN MESS 653 WAIT ENDIF Examine floor.
+68
+IF NOUN 23 OR NOUN 102 AND VERB 70 THEN MESS 655 WAIT ENDIF Examine walls/stone.
+68
+IF VERB 70 AND NOUN 248 THEN MESS 660 WAIT ENDIF Examine writings.
+69
+IF VERB 15 OR VERB 55 AND NO1EQ 505 AND NO2EQ 0 THEN MESS 703 WAIT ENDIF Put lantern/oil without specifying where.
+69
+IF VERB 70 AND NOUN 504 THEN MESS 618 WAIT ENDIF Examine mechanism.
+69
+IF NOUN 71 OR NOUN 504 AND VERB 69 AND SET? 104 AND RES? 105 THEN MESS 619 SET 105 WAIT ENDIF Push crank, lubricated.
+69
+IF VERB 69 AND NOUN 504 THEN MESS 620 WAIT ENDIF Push crank, not lubricated.
+69
+IF VERB 70 AND NOUN 246 THEN MESS 654 WAIT ENDIF Examine stalactites/stalagmites.
+69
+IF VERB 70 AND NOUN 23 THEN MESS 655 WAIT ENDIF Examine walls.
+70
+IF NOUN 23 OR NOUN 159 AND VERB 70 THEN MESS 661 WAIT ENDIF Examine walls.
+70
+IF VERB 70 AND NOUN 249 THEN MESS 662 WAIT ENDIF Examine mud.
+70
+IF VERB 70 AND NOUN 241 THEN MESS 663 WAIT ENDIF Examine holes.
+70
+IF VERB 70 AND NOUN 250 THEN MESS 664 WAIT ENDIF Examine deposits.
+70
+IF VERB 70 AND NOUN 500 THEN MESS 665 WAIT ENDIF Examine rope.
+71
+IF VERB 70 AND NOUN 241 AND RES? 105 THEN MESS 623 WAIT ENDIF Examine pit, full of water.
+71
+IF VERB 70 AND NOUN 241 AND SET? 105 THEN MESS 624 WAIT ENDIF Examine pit, empty.
+71
+IF VERB 242 AND NO1EQ 500 AND NO2EQ 243 AND AVAI 500 THEN MESS 625 SETCONN 71 6 70 TO 500 71 SET 106 WAIT ENDIF Tie the rope to the grate.
+71
+IF VERB 410 THEN MESS 402 WAIT ENDIF Dive (in the pit).
+71
+IF VERB 100 OR VBNOEQ 0 AND NOUN 85 AND RES? 105 THEN MESS 623 WAIT ENDIF  VAI BASSO.
+71
+IF VERB 70 AND NOUN 243 THEN MESS 656 WAIT ENDIF Examine grate.
+71
+IF VERB 70 AND NOUN 500 AND SET? 106 THEN MESS 658 WAIT ENDIF Examine rope, tied to the grate.
+71
+IF VERB 70 AND NOUN 251 THEN MESS 666 WAIT ENDIF Examine ceiling.
+72
+IF NOUN 159 OR NOUN 247 AND VERB 70 THEN MESS 659 WAIT ENDIF Examine dust/floor.
+73
+IF VERB 70 AND NOUN 243 THEN MESS 671 WAIT ENDIF Examine grate.
+74
+IF VERB 70 AND NOUN 240 THEN MESS 617 WAIT ENDIF Examine bones/skulls.
+74
+IF VERB 100 OR VBNOEQ 0 AND NOUN 80 AND SET? 111 THEN MESS 623 WAIT ENDIF  Go north, but it is flooded.
+76
+IF VERB 50 AND NOUN 506 THEN MESS 631 WAIT ENDIF Pick up the torch.
+76
+IF VERB 406 AND NOUN 23 AND SET? 109 THEN MESS 640 SET 108 WAIT ENDIF Knock walls. Has to get out.
+76
+IF VERB 70 AND NOUN 23 THEN MESS 639 WAIT ENDIF Examine walls.
+76
+IF VERB 78 AND NOUN 23 THEN MESS 908 WAIT ENDIF Destroy walls. *** Added in v. 1.1
+76
+IF NO1EQ 501 AND AVAI 501 AND NO2EQ 23 THEN MESS 909 WAIT ENDIF Anything implying crowbar and walls. *** Added in v. 1.1
+76
+IF NO1EQ 23 OR NO2EQ 23 AND VERB 69 AND SET? 108 AND RES? 118 THEN MESS 641 SETCONN 76 4 78 SET 118 WAIT ENDIF Push panels after founding that the east wall sounds empty. *** Modified in v. 1.1
+76
+IF VERB 70 AND NOUN 506 AND SET? 109 THEN MESS 642 WAIT ENDIF Examine torch.
+76
+IF VERB 70 AND NOUN 506 THEN MESS 629 WAIT ENDIF Examine torch.
+77
+IF VERB 100 OR VBNOEQ 0 AND NOUN 83 AND SET? 107 THEN OVEST WAIT ENDIF Go to west, rats have gone away.
+77
+IF VERB 55 AND NOUN 506 AND AVAI 506 THEN MESS 630 SET 107 TO 506 76 WAIT ENDIF Throw the torch, scare the rats away.
+77
+IF VERB 100 OR VBNOEQ 0 AND NOUN 83 THEN MESS 627 WAIT ENDIF Go to west, but the room is full of rats.
+77
+IF VERB 70 AND NOUN 240 THEN MESS 617 WAIT ENDIF Examine skulls.
+78
+IF VERB 70 AND NOUN 504 THEN MESS 674 WAIT ENDIF Examine mechanism.
+78
+IF VERB 69 AND NOUN 71 AND SET? 112 THEN MESS 680 WAIT ENDIF Pull lever, but door is open.
+78
+IF VERB 69 AND NOUN 71 AND ISNOTWEARING 173 AND RES? 112 THEN MESS 675 WAIT ENDIF Pull lever, steam on eyes.
+78
+IF VERB 69 AND NOUN 71 AND ISWEARING 173 AND RES? 112 THEN MESS 676 SETCONN 78 5 80 SET 112 WAIT ENDIF Pull lever, with goggles.
+78
+IF VERB 100 OR VBNOEQ 0 AND NOUN 84 AND NOTCARR 511 THEN MESS 678 WAIT ENDIF Up, without sandals.
+78
+IF VERB 12 OR VERB 70 AND NOUN 4 AND RES? 112 THEN MESS 677 WAIT ENDIF Open/Examine door, locked.
+78
+IF VERB 12 OR VERB 70 AND NOUN 4 AND SET? 112 THEN MESS 679 WAIT ENDIF Open/Examine door, already open.
+79
+IF VERB 70 AND NOUN 252 THEN MESS 672 WAIT ENDIF Examine candles/pentagon.
+79
+IF VERB 70 AND NOUN 240 THEN MESS 673 WAIT ENDIF Examine skulls.
+79
+IF VERB 70 AND NOUN 255 THEN MESS 686 WAIT ENDIF Examine altar.
+80
+IF VERB 70 AND NOUN 4 THEN MESS 687 WAIT ENDIF Examine door.
+80
+IF VERB 70 AND NOUN 200 THEN MESS 688 WAIT ENDIF Examine library.
+80
+IF VERB 12 AND NOUN 10 THEN MESS 683 SET 115 WAIT ENDIF Open window
+80
+IF VERB 253 AND NOUN 254 AND SET? 115 AND SET? 113 THEN MESS 684 PRESSKEY MESS 685 EXIT ENDIF Finish game
+80
+IF VERB 253 AND NOUN 254 AND SET? 115 THEN MESS 705 WAIT ENDIF Jump outside -> not yet!
+80
+IF VERB 70 AND NOUN 58 THEN MESS 690 WAIT ENDIF Examine chandelier.
+80
+IF VERB 70 AND NOUN 10 THEN MESS 693 WAIT ENDIF Examine window.
+81
+IF VERB 12 AND NOUN 10 THEN MESS 689 WAIT ENDIF Open window.
+81
+IF VERB 70 AND NOUN 167 THEN MESS 691 WAIT ENDIF Examine chair.
+81
+IF VERB 70 AND NOUN 20 THEN MESS 692 WAIT ENDIF Examine desk.
+81
+IF VERB 70 AND NOUN 10 THEN MESS 693 WAIT ENDIF Examine window.
+103
+IF VERB 230 AND NOUN 232 THEN GOTO 104 WAIT ENDIF Ask for password.
+DIZIONARIO
+1
+VERBO
+RADIATOR
+2
+NOME
+TAPESTRIES
+3
+NOME
+TAPESTRY
+3
+NOME
+PATTERN
+3
+NOME
+PATTERNS
+3
+NOME
+DOOR
+4
+NOME
+GATE
+4
+NOME
+GREASE
+5
+NOME
+BLOB
+5
+NOME
+GLOB
+5
+NOME
+LIGHT
+6
+NOME
+LIGHTS
+6
+NOME
+KEY
+9
+NOME
+WINDOW
+10
+NOME
+WINDOWS
+10
+NOME
+DRAWER
+11
+NOME
+DRAWERS
+11
+NOME
+OPEN
+12
+VERBO
+CLOSET
+13
+NOME
+USE
+15
+VERBO
+FRAME
+17
+NOME
+BED
+18
+NOME
+DESK
+20
+NOME
+DOSSIER
+20
+NOME
+DOSSIERS
+20
+NOME
+PLAQUE
+21
+NOME
+BUTTON
+21
+NOME
+BUTTONS
+21
+NOME
+CURTAINS
+22
+NOME
+TAFFETAS
+22
+NOME
+WALL
+23
+NOME
+WALLS
+23
+NOME
+PANEL
+23
+NOME
+PANELS
+23
+NOME
+PANELING
+23
+NOME
+DECORATION
+23
+NOME
+DECORATIONS
+23
+NOME
+WOOD
+23
+NOME
+TELEGRAM
+42
+NOME
+PAPER
+43
+NOME
+SHEET
+44
+NOME
+PIECES
+44
+NOME
+LETTER
+45
+NOME
+ORDER
+48
+NOME
+OFFICER
+49
+ATTORE
+GET
+50
+VERBO
+GRAB
+50
+VERBO
+TAKE
+50
+VERBO
+OFFICE
+51
+NOME
+BOX
+51
+NOME
+DROP
+55
+VERBO
+LEAVE
+55
+VERBO
+SLIDE
+55
+VERBO
+PUT
+55
+VERBO
+POUR
+55
+VERBO
+TRY
+55
+VERBO
+SET
+55
+VERBO
+THROW
+55
+VERBO
+TOSS
+55
+VERBO
+DRIVE
+56
+VERBO
+ENTER
+56
+VERBO
+CHANDELIER
+58
+NOME
+CHANDELIERS
+58
+NOME
+BURNER
+58
+NOME
+BURNERS
+58
+NOME
+POST
+58
+NOME
+GIVE
+66
+VERBO
+PULL
+69
+VERBO
+PUSH
+69
+VERBO
+TURN
+69
+VERBO
+EX
+70
+VERBO
+EXAMINE
+70
+VERBO
+X
+70
+VERBO
+READ
+70
+VERBO
+SEARCH
+70
+VERBO
+VISIT
+70
+VERBO
+HANDLE
+71
+NOME
+LEVER
+71
+NOME
+BELL
+71
+NOME
+I
+72
+NOME
+INV
+72
+NOME
+INVE
+72
+NOME
+INVENTORY
+72
+NOME
+BYE
+73
+VERBO
+SHOW
+74
+VERBO
+EXIT
+76
+VERBO
+PLAY
+77
+VERBO
+BREAK
+78
+VERBO
+DESTROY
+78
+VERBO
+DEMOLISH
+78
+VERBO
+ROOM
+79
+NOME
+N
+80
+NOME
+NORTH
+80
+NOME
+S
+81
+NOME
+SOUTH
+81
+NOME
+E
+82
+NOME
+EAST
+82
+NOME
+W
+83
+NOME
+WEST
+83
+NOME
+ABOVE
+84
+NOME
+U
+84
+NOME
+UP
+84
+NOME
+UPSTAIRS
+84
+NOME
+BELOW
+85
+NOME
+D
+85
+NOME
+DOWN
+85
+NOME
+DOWNSTAIRS
+85
+VERBO
+UNDER
+85
+NOME
+BUY
+88
+VERBO
+PICK
+95
+VERBO
+VILLA
+98
+NOME
+TRAMWAY
+99
+NOME
+TRAM
+99
+NOME
+RAIL
+99
+NOME
+RAILS
+99
+NOME
+RAILWAY
+99
+NOME
+GO
+100
+VERBO
+RUN
+100
+VERBO
+WALK
+100
+VERBO
+TREE
+101
+NOME
+TREES
+101
+NOME
+PARK
+101
+NOME
+STONE
+102
+NOME
+STONES
+102
+NOME
+LIMESTONE
+102
+NOME
+L
+110
+VERBO
+LOOK
+110
+VERBO
+REPAIR
+111
+VERBO
+FACADE
+112
+NOME
+CONSTRUCTION
+113
+NOME
+WORK
+113
+NOME
+WORKS
+113
+NOME
+RIVER
+114
+NOME
+PO
+114
+NOME
+BRIDGE
+115
+NOME
+CHURCH
+116
+NOME
+MADRE
+116
+NOME
+STAIRCASE
+116
+NOME
+STOP
+117
+NOME
+DRESS
+120
+VERBO
+WEAR
+120
+VERBO
+UNDRESS
+121
+VERBO
+UNWEAR
+121
+VERBO
+GOGGLES
+122
+NOME
+ENTRANCE
+126
+NOME
+SMELL
+143
+VERBO
+FURNITURE
+144
+NOME
+TO
+150
+AVVERBIO
+WRITE
+155
+VERBO
+OBJECT
+156
+NOME
+FLOOR
+159
+NOME
+GROUND
+159
+NOME
+MARBLE
+159
+NOME
+LIFT
+160
+VERBO
+MOVE
+160
+VERBO
+FIRE
+164
+NOME
+ARCADE
+165
+NOME
+ARCADES
+165
+NOME
+UPHOLSTERY
+166
+NOME
+PAD
+167
+NOME
+PADS
+167
+NOME
+CHAIR
+167
+NOME
+CHANNEL
+168
+NOME
+CAPPUCCINO
+168
+NOME
+CHAIRS
+167
+NOME
+POSTER
+168
+NOME
+FASCICULE
+180
+NOME
+PAGES
+180
+NOME
+CAR
+181
+NOME
+51
+181
+NOME
+PIPE
+183
+NOME
+LIBRARY
+200
+NOME
+SIT
+201
+VERBO
+SLEEP
+201
+VERBO
+CLOTHES
+202
+NOME
+CLOSE
+203
+VERBO
+RESTAURANT
+204
+NOME
+STUCCO
+205
+NOME
+TOOL
+206
+NOME
+TOOLS
+206
+NOME
+PRAY
+210
+VERBO
+DRINK
+211
+VERBO
+EAT
+211
+VERBO
+SWALLOW
+211
+VERBO
+ON
+214
+AVVERBIO
+OFF
+215
+AVVERBIO
+MIRROR
+219
+NOME
+CARPET
+228
+NOME
+HANDRAIL
+229
+NOME
+SHIBBOLETH
+230
+VERBO
+FANFALUCH
+231
+NOME
+LUMASSON
+232
+NOME
+BRUTCOMALANEUIT
+233
+NOME
+GIRDER
+237
+NOME
+GIRDERS
+237
+NOME
+WORKBENCH
+238
+NOME
+BENCH
+238
+NOME
+PILE
+239
+NOME
+PILES
+239
+NOME
+GARBAGE
+239
+NOME
+SKULL
+240
+NOME
+SKULLS
+240
+NOME
+BONE
+240
+NOME
+BONES
+240
+NOME
+MANHOLE
+241
+NOME
+PIT
+241
+NOME
+HOLE
+241
+NOME
+HOLES
+241
+NOME
+TIE
+242
+VERBO
+GRATE
+243
+NOME
+IGNITE
+244
+VERBO
+STEPLADDER
+245
+NOME
+STALACTITES
+246
+NOME
+STALAGMITES
+246
+NOME
+DUST
+247
+NOME
+WRITING
+248
+NOME
+WRITINGS
+248
+NOME
+MUD
+249
+NOME
+DEPOSIT
+250
+NOME
+DEPOSITS
+250
+NOME
+CEILING
+251
+NOME
+CANDLE
+252
+NOME
+CANDLES
+252
+NOME
+PENTAGON
+252
+NOME
+JUMP
+253
+VERBO
+OUTSIDE
+254
+NOME
+OUT
+254
+NOME
+ALTAR
+255
+NOME
+DISPLAY
+255
+NOME
+MESSAGE
+301
+NOME
+CURSE
+400
+VERBO
+FUCK
+400
+VERBO
+PISS
+400
+VERBO
+CARESS
+406
+VERBO
+PET
+406
+VERBO
+TOUCH
+406
+VERBO
+KNOCK
+406
+VERBO
+KISS
+406
+VERBO
+TAP
+406
+VERBO
+ABOUT
+407
+VERBO
+HELP
+407
+VERBO
+INFO
+407
+VERBO
+HINT
+408
+NOME
+EMILIA
+409
+NOME
+ME
+409
+NOME
+MYSELF
+409
+NOME
+DIVE
+410
+VERBO
+EXTRACT
+411
+VERBO
+ROPE
+500
+NOME
+CROWBAR
+501
+NOME
+LAMP
+502
+NOME
+MATCH
+503
+NOME
+MATCHES
+503
+NOME
+MECHANISM
+504
+NOME
+MACHINE
+504
+NOME
+CRANK
+504
+NOME
+LANTERN
+505
+NOME
+OIL
+505
+NOME
+TORCH
+506
+NOME
+TORCHES
+506
+NOME
+STICK
+507
+NOME
+SANDALS
+511
+NOME
+SANDAL
+511
+NOME
+SHOES
+511
+NOME
+SHOE
+511
+NOME
+RESTART
+987
+VERBO
+LOAD
+988
+VERBO
+SAVE
+989
+VERBO
+XYZZY
+1000
+VERBO
+THEN
+9999
+SEPARATORE
+LOCAZIONI
+60
+You are in a relatively large elevated square, paved with stones, crossed by tramway rails, and lit by large gas lamp posts. There is construction in progress on one side of the square; yesterday it wasn't there!
+
+Piazza Manin
+0
+61
+0
+0
+0
+0
+0
+0
+0
+0
+61
+You are standing at the entrance gate to the grounds of a charming villa built in the sixteenth century. A handle can be pulled to ring a bell in the villa. You perceive some tiny lights glowing in the distance: most likely they are torches.
+
+Villa Raligotto
+60
+0
+0
+0
+0
+0
+0
+0
+0
+0
+62
+You are in a long, damp tunnel. There is a narrow channel in the middle, and you can walk along its side without getting your feet wet.
+
+Sewer tunnel
+0
+0
+63
+0
+60
+0
+0
+0
+0
+0
+63
+You are in a long, damp tunnel. You feel air blowing from the south.
+
+Sewer tunnel
+0
+0
+64
+62
+0
+0
+0
+0
+0
+0
+64
+You are in a long, damp tunnel. A pipe on the ceiling leaks water and shows signs of recent repairs. There are piles of garbage everywhere.
+
+Sewer tunnel
+0
+0
+65
+63
+0
+0
+0
+0
+0
+0
+65
+You are in a long, damp tunnel, ending at a grate to the east. There is a pile of garbage in a corner.
+
+Sewer tunnel
+0
+0
+0
+64
+0
+0
+0
+0
+0
+0
+66
+You are in a small tunnel, with a dry floor. There is a manhole in one corner, with a metallic stepladder.
+
+Tunnel
+63
+0
+67
+0
+0
+69
+0
+0
+0
+0
+67
+You are in a tight passage, with brick walls.
+
+Passage
+0
+71
+0
+66
+0
+0
+0
+0
+0
+0
+68
+You are in a small cubicle, hewn in the limestone. Mysterious writing are covers the walls.
+
+Cell
+0
+0
+72
+0
+0
+0
+0
+0
+0
+0
+69
+You are in a narrow chamber carved in the rock, deeply underground. Small stalactites and stalagmites testify to years of water dripping from the ceiling. 
+
+Drain chamber
+0
+0
+0
+0
+66
+0
+0
+0
+0
+0
+70
+This chamber has been filled with water for decades. The walls are encrusted with calcareous deposits, and the floor is covered with slippery mud. Water flushed away through large holes in the floor. There's a passage to the south, that climbs towards an elevated area.
+
+Cistern
+0
+74
+0
+0
+71
+0
+0
+0
+0
+0
+71
+You are in a vast place with a dark vertical pit in the middle, an iron grate to the east and a barrel-vaulted ceiling.
+
+Pit room
+67
+75
+0
+0
+0
+0
+0
+0
+0
+0
+72
+You are in a long, narrow and twisty tunnel. The floor is covered with dust and this area probably remains dry at all times. No-one has been here for many years.
+
+Tunnel
+68
+0
+0
+75
+0
+0
+0
+0
+0
+0
+73
+You can hide in the shadows. Through a tiny grate you see a large chamber.
+
+Niche behind a grate
+0
+0
+0
+0
+0
+76
+0
+0
+0
+0
+74
+This room is crammed with bones. Skulls, clearly human, are literally everywhere. If hell exists, you think that its entrance may look something like this.
+
+Hell's gate
+70
+77
+0
+0
+0
+0
+0
+0
+0
+0
+75
+You are in a small hallway, with brick walls.
+
+Hallway
+71
+0
+72
+0
+0
+0
+0
+0
+0
+0
+76
+Although hard to believe, there are more skulls piled up within these walls than in previous rooms. Something terrible happened in the past. Probably a plague, centuries ago, ravaged this area and the bodies of the victims were dumped down here.
+
+Pile of skulls chamber
+0
+0
+77
+0
+73
+0
+0
+0
+0
+0
+77
+This chamber continues the hellish theme and you have to walk on a floor completely covered by remains of human beings. You see hundreds of skulls and they seem to silently scream at the frail light of your lamp.
+
+Nightmare room
+74
+0
+0
+76
+0
+0
+0
+0
+0
+0
+78
+You are in a small staircase, probably a secret passage. There is a door upstairs.
+
+Secret passage
+79
+0
+0
+0
+0
+0
+0
+0
+0
+0
+79
+You are in a large chamber, with many candles forming a pentagon in the middle of the room. A stone altar is set at the centre. Dozens of skulls hang from the ceiling.
+
+Ceremonial chamber
+0
+78
+0
+0
+0
+0
+0
+0
+0
+0
+80
+You are in a large room, full of books. On one wall, the library opens with the secret door you came through. During the day, light enters from a window to the east, but now a chandelier is burning in the centre of the room.
+
+Library
+0
+0
+0
+81
+0
+0
+0
+0
+0
+0
+81
+You are in an elegant chamber. There is a large window behind a desk and chair.
+
+Raligotto's Studio
+0
+0
+80
+0
+0
+0
+0
+0
+0
+0
+103
+Enter password
+
+Introduction
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+104
+You came to Genoa in the ITA 51. The journey in the evening was a little adventure on its own, but the car is fast and reliable and you were able to complete it with no accidents. Now it's about 10 o'clock and the sky is dark.
+
+Introduction
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+MESSAGGI
+33
+It's a large wrought-iron gate, topped with polished brass decorations. On one of them, you see a strange symbol composed of a stretched oval, a sort of an "O" with a wavy diagonal going from top left to bottom right.
+72
+The air smells of iodine and salt, with a faint fishy undertone. You breathe it in voluptuously.
+76
+Many lines of the steam tramway pass through here.
+108
+Use 'bye' if you want to stop playing.
+231
+You can try it, but it probably won't work.
+237
+No reason to do that, now.
+261
+The ITA 51 is a small and sporty two cylinder steam car, built by your father's company. It's your car: it's fast and agile and you're an excellent racing driver.
+307
+You need them, for the car.
+400
+No. You aren't tired, now.
+402
+No. It may be dangerous.
+407
+This is a text adventure game. Read descriptions carefully and type commands such as 'examine bed'. Type "north", "south", ... to move in the desired direction.. Abbreviations are possible "x" for "examine", "l" to "look" (i.e. describe your current location again), "i" for "inventory," "n" for "north" and so on. To quit the game, type "bye". To restart it, type "restart".
+505
+What cat?
+504
+Please feel free to continue, if you wish to... I've become immunised to swearing and profanity a long time ago.
+518
+You'll examine yourself much better with a mirror.
+600
+And potentially face a dangerous member of a secret society? No, thanks!
+601
+I can't move in the dark!
+602
+It's an acetylene lamp, a Moissan model, made in France. Water on carbide generates acetylene that burns with a bright white flame.
+603
+It's an acetylene lamp, a Moissan model, made in France. It's off, but you have matches and carbide and the reservoir is full of water.
+604
+You open the valve and the water drips on the block of carbide. The acetylene exits the burner with an acrid smell. You ignite it with a match, and a vivid flame is produced.
+605
+You close the valve and the water stops dripping. The lamp is now off.
+606
+You hit the wall with the crowbar and you are able to demolish it. It was not very solid, after all!
+607
+The south wall is not complete. Bricks are missing under the ceiling, and air flows through the gap. There's a cavity on the other side!
+608
+The smell is awful: damp, sewage and mold.
+609
+It's covered by rust, but it's still solid.
+610
+It has been left there for at least 50 years. There are old rags, eaten by rats. A wooden box nonetheless contains a crowbar.
+611
+It's a pile of garbage. Nothing of interest.
+612
+It's a strong iron grate, allowing the water to flow away.
+613
+A corner of the square is cordoned off. There's a wooden box next to an open manhole.
+614
+There is a box containing some tools. Apparently, something is being repaired underground: there's an open manhole.
+615
+The box contains an acetylene lamp and a long rope.
+616
+With your bare hands? Killing a dragon would be easier!
+617
+Thousands of bodies have been piled up here, hundreds of years ago. As you explore this place, your very being fills with horror.
+618
+It's a machine, with exposed gears moved by a brass crank. It probably controls water drainage, but it has not been used for decades.
+619
+After a while, the crank slowly moves, and you feel the machine pushing a heavy object such as a bulkhead somewhere else. You hear the sound of water flushing away.
+620
+You push with all your might, but it does not move.
+621
+It's an old oil lantern, broken. It contains a little bit of rancid oil.
+622
+You pour oil from the lantern on the wheels of the machine. It should help!
+623
+It's full of water.
+624
+There is probably a chamber at the bottom of the pit.
+625
+You tie the rope to the grate and you drop the other end in the pit. It will support your weight.
+626
+No, that may be useful like that.
+627
+Ick! The floor is crawling with rats. You will not set foot in there unless you will find a way to repel those vermin.
+628
+You set fire to the stick with the acetylene lamp. Now you have a flaming torch in your hand.
+629
+The light from your lamp is enough, but the torch will last for a while.
+630
+You throw the torch and it falls on the floor of the room to the east. All the rats run away, scared by the fire.
+631
+No! The rats may come back.
+632
+No. It will only last for a few seconds.
+633
+You poke the glob of grease with the stick. It's slimy and it impregnates the wood. Ick!
+634
+Hell, no! Not with your bare hands.
+635
+It's a disgusting blob of grease attached to the wall of the channel, probably formed by oils and greases of the sewer.
+636
+You turn off your lamp, so as not to be seen by the people in the chamber, which is faintly illuminated by candles. Ten masked figures stand around a large pentagon. An altar is placed in the centre of the pentagon and carries the Queen's sandals. The contents of the stolen box! At the side of the room, ten young women, each dressed in a light linen garment, stand almost in a trance. Close to the altar, a masked priest intones "Oh most beautiful Nefertari Meritmut, Queen of the ancient ages, come with us and show us the truth. Your sandals will find the path and we will follow your footsteps. The fountain that can not be drained will spring in our souls; we will to drink of its liquor that does not inebriate..." You recognise his voice: Raligotto! Then, a puff of steam escapes from under the altar and a mist falls on the bystanders.
+637
+The ceremonial lasts for a few minutes. Some tricks like the steam are meant to show the "materialisation" of Nefertari. Raligotto continues to recite spells and formulae, but you are not impressed at all. At the end, each girl takes a masked man by the hand, and they drift away. You remain alone, watching the large room, now empty.
+638
+^MYou hear a flushing noise. You turn on your lamp and run towards the cistern, but you find that water has again invaded the path from whence you came. You come back, blocked in this catacomb: the torch is going out and the rats will return in a few minutes!
+639
+The walls are covered in marble paneling.
+640
+You knock everywhere. The west wall sounds empty.
+641
+You push the west wall with all your might. One marble panel slides, revealing a passage.
+642
+The flame is extinguishing. Think fast!
+643
+^MWhile you push yourself into the tight gap, leaving behind this nightmarish room, the torch goes out. You hear the rats invading the floor, but you escaped on time.
+644
+They are decorated lavishly, but the light is feeble.
+645
+Many people came here, this evening...
+646
+Putrid and smelly water flows there.
+647
+It's a drinking water pipe.
+648
+It's a robust iron grate. Water goes through it, but you definitely can't.
+649
+Use the force, Emilia!
+650
+The walls are made of bricks, with saline encrustations, old spider webs and mould stains.
+651
+You know, a round hole in the ground that you can pass through... It has no cover, though.
+652
+It will support your weight.
+653
+A concrete slab.
+654
+The water must be calcareous here.
+655
+Stone-y!
+656
+It's an iron grate, a drain for water, solidly attached to the wall.
+657
+It's a long and robust rope.
+658
+It's a long and robust rope, solidly tied to the grate.
+659
+There is a lot of dust, but no footprints are visible except your own.
+660
+Someone likely stayed here for a long time. He or she wrote several numbers on the wall, with the smoke of a flame, probably counting the days.
+661
+This place was probably used as a reservoir, many years ago, hence the mechanism to control the water flow.
+662
+It's the very fine mud left by water sedimentation.
+663
+Those are drain holes: there are five of them. They are too small to get through. Not that you want to, anyway...
+664
+They are white and remarkably uninteresting.
+665
+You learnt how to climb on such things some years ago.
+666
+It requires a certain skill to build a ceiling like that!
+667
+The password for the final part of the game is SHIBBOLETH BRUTCOMALANEUIT.
+668
+Old artefacts require care.
+669
+Prometheus' fate was a terrible one, but he gifted us interesting things.
+670
+You found them! Queen Nefertari's sandals, one of her most precious grave goods.
+671
+You see a chamber behind the grate, with candles forming a pentagon in the centre of the room. A stone altar is in the middle of it.
+672
+Candles were lit during the ceremony you saw from the grate and the pentagon is one of the symbols revered by occultists. It's suggestive, but you suspect the bystanders were more interested in the girls. 
+673
+You think you know from whence they come. There is the symbol with the O and S carved in their front.
+674
+You evidently stand behind a concealed door, heavy and controlled by a strange mechanism. A large piston pushes the door against the wall, and pipes carry steam to it. There's a lever on the right-hand side.
+675
+You pull the lever, but steam escapes from a punctured pipe into your face. You have to release the lever and step away.
+676
+The goggles protect you from the steam blown in your face; the pressure is not excessive and you are not burnt. When the pressure is relieved, the heavy door opens, very silently.
+677
+It's locked.
+678
+You're not leaving without the Queen's sandals!
+679
+It's open.
+680
+Nothing happens.
+681
+You hear two voices in the nearby salon:^M^M- Where are your guests?^M- Upstairs, with the girls.^M^MYou recognize Pizzarrotti and Raligotto. Pizzarrotti is very angry:^M^M- You are a chump: why did you hire an assassin to kill Rovelli? He couldn't be more idiotic, he chased him into the Mole Antonelliana and he left our sign made with his blood so that now all the police in the north of Italy are after us.^M- He threatened me! Didn't you think that the reason he went to Turin was to extort money from you too? I did you a favor!^M- You are a rotten little nobleman trying to make a name for yourself, asking for money for your clumsy staged ceremonies; you are a good-for-nothing, able only to piss away your father's fortune! I am trying to save everything and I find you with your acolytes, blinded by alcohol and sex, not realising that there are things so much bigger at play.^M^MYou'd better get out of here immediately.
+682
+Just after you pass through it, the secret door closes itself again.
+683
+You are on the ground floor: you can jump outside.
+684
+You jump outside and run across the villa's grounds lit by the moon. You find a place where you can climb the fence. When you touch the ground outside, you see many cars with a siren approaching: it's the police! You walk away, un-noticed. You return to Turin in the middle of the night to meet Schiaparelli, who is relieved to see the sandals again. The police would have kept them for years waiting for the trial. You could finally go home to your villa to rest.
+685
+You wake up in your bedroom. Your father made breakfast (it would be better to say lunch) for you in the salon, along with a copy of La Stampa, the local newspaper. On the first page is a headline with a short article:^M^M"MURDER IN THE MOLE ANTONELLIANA: SECRET CRIME SOCIETY DISMANTLED: Orientis Sapientia, a secret society recruiting in the high society of several cities of the north of Italy has been discovered and many of its members have been arrested in a coordinated Police action between Turin, Genoa and Milan. The society is suspected in thefts of many works of art and to have ordered the murder of Antonio Rovelli, whose dead body was discovered in the Tempietto of the Mole Antonelliana yesterday."^M^MThe article then describes the rituals and the prostitutes, but you know the story. Nothing is said about the Queen's sandals, and that is a good thing for you.^M^MFinal code word: LANEUITAPORTACUNSEI!^M^MThanks for playing this game!
+686
+It's a stone altar covered by a scarlet tablecloth.
+687
+You know where the door is, but it is now invisible. There is probably a hidden lever to open it.
+688
+There are many precious books.
+689
+The window is locked.
+690
+It's in brass, with laurel leaves.
+691
+Nice red velvet lining.
+692
+It's a large desk, in mahogany.
+693
+It's night, outside.
+694
+It's an old wooden stick, eaten by woodworm.
+695
+It's an old wooden stick, impregnated with grease.
+696
+It burns well. You can throw it to scare rats.
+697
+Matches: they ignite things.
+698
+"Let me see. Alas, poor Yorick! I knew him, Horatio, a fellow of infinite jest, of most excellent fancy." Better let those bones rest in peace...
+699
+Walls may not be as they seem.
+700
+Protection is the key.
+701
+You don't need that anymore.
+703
+Be more precise. I don't think you mean on the floor!
+704
+No. It would spill everywhere.
+705
+Not now, you hear voices nearby. Their conversation is probably interesting.
+906
+No, you are here to find the sandals!
+907
+Certainly Raligotto loves incense!
+908
+No, too many people are around.
+909
+Too noisy! Try with your hands.
+911
+You try to rub the stick on the mechanism, but the grease is not fluid enough to penetrate through the gears.
+912
+No. You think it will be useful.
+996
+I see nothing interesting.
+997
+You don't smell anything in particular, apart from a barely perceptible scent of lavender, coming from your clothes.
+998
+You have a strange sensation, almost as if you were becoming lighter and lighter. After a while, everything becomes normal, again.
+1000
+Okay.
+1001
+Done.
+1002
+Done.
+1003
+Y
+1004
+I
+1005
+You can't take that!
+1006
+You can't do that!
+1007
+You don't have that with you!
+1008
+You can't go that way!
+1009
+I beg your pardon?
+1010
+You can't.
+1011
+You already have that with you!
+1012
+What do you want to do? 
+1013
+It's dark, you can't see anything.
+1018
+worn 
+1019
+You already put it on.
+1020
+You can go: 
+1021
+north
+1022
+south
+1023
+east
+1024
+west
+1025
+up
+1026
+down
+1027
+
+1028
+
+1029
+
+1030
+
+1031
+You notice: 
+1032
+You have with you: 
+1033
+You don't have anything with you.
+1035
+
+OGGETTI
+500
+
+Long rope
+0
+0
+0
+FALSE
+FALSE
+501
+
+Crowbar
+0
+0
+0
+FALSE
+FALSE
+502
+
+An acetylene lamp and some matches
+0
+0
+0
+FALSE
+FALSE
+503
+
+A large wooden box.
+0
+0
+0
+TRUE
+FALSE
+504
+
+A complex mechanism
+0
+0
+69
+TRUE
+FALSE
+505
+
+Broken lantern
+0
+0
+68
+FALSE
+FALSE
+506
+
+Flaming torch
+0
+0
+0
+FALSE
+FALSE
+507
+
+Wooden stick
+0
+0
+72
+FALSE
+FALSE
+508
+
+Glob of grease
+0
+0
+64
+FALSE
+FALSE
+509
+
+Greasy stick
+0
+0
+0
+FALSE
+FALSE
+510
+
+Rope hanging from the ceiling
+0
+0
+70
+TRUE
+FALSE
+511
+
+The Queen's sandals
+0
+0
+79
+FALSE
+FALSE
+512
+
+Door's mechanism
+0
+0
+78
+TRUE
+FALSE
+105
+
+A square key with the ITA symbol on it
+0
+0
+1500
+FALSE
+FALSE
+173
+
+Pilot goggles
+0
+0
+1500
+FALSE
+TRUE
+174
+
+The ITA 51 car
+0
+0
+60
+TRUE
+FALSE
+FINEDATI

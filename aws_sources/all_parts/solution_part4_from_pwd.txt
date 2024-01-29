@@ -1,0 +1,16 @@
+SHIBBOLETH BRUTCOMALANEUIT
+touch walls
+push walls
+w
+n
+take sandals
+s
+wear goggles
+pull lever
+up
+w
+
+e
+open window
+jump outside
+

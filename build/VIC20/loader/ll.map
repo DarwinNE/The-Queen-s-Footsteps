@@ -1,0 +1,49 @@
+Modules list:
+-------------
+vic40loader.o:
+    CODE              Offs=000000  Size=001D13  Align=00001  Fill=0000
+    FILLER            Offs=000000  Size=001000  Align=00001  Fill=0000
+/Users/davidebucci/Desktop/Synchronized/Vintage/Computing/cc65/lib/vic20.lib(exehdr.o):
+    EXEHDR            Offs=000000  Size=00000C  Align=00001  Fill=0000
+/Users/davidebucci/Desktop/Synchronized/Vintage/Computing/cc65/lib/vic20.lib(loadaddr.o):
+    LOADADDR          Offs=000000  Size=000002  Align=00001  Fill=0000
+/Users/davidebucci/Desktop/Synchronized/Vintage/Computing/cc65/lib/vic20.lib(zeropage.o):
+    ZEROPAGE          Offs=000000  Size=00001A  Align=00001  Fill=0000
+
+
+Segment list:
+-------------
+Name                   Start     End    Size  Align
+----------------------------------------------------
+ZEROPAGE              000002  00001B  00001A  00001
+LOADADDR              0011FF  001200  000002  00001
+EXEHDR                001201  00120C  00000C  00001
+FILLER                00120D  00220C  001000  00001
+CODE                  00220D  003F1F  001D13  00001
+
+
+Exports list by name:
+---------------------
+__EXEHDR__                000001 REA    __LOADADDR__              000001 REA    
+__STACKSIZE__             000100 REA    ptr1                      00000A RLZ    
+
+
+
+Exports list by value:
+----------------------
+__LOADADDR__              000001 REA    __EXEHDR__                000001 REA    
+ptr1                      00000A RLZ    __STACKSIZE__             000100 REA    
+
+
+
+Imports list:
+-------------
+__EXEHDR__ (exehdr.o):
+    [linker generated]        vic20-32k_exp.cfg(5)
+__LOADADDR__ (loadaddr.o):
+    [linker generated]        vic20-32k_exp.cfg(4)
+__STACKSIZE__ ([linker generated]):
+    [linker generated]        vic20-32k_exp.cfg(12)
+ptr1 (zeropage.o):
+    vic40loader.o             vic40loader.s(43)
+

@@ -1,0 +1,207 @@
+
+
+take brochure
+s
+s
+x door
+take grease
+d
+talk to clerk
+read telegram
+s
+s
+w
+talk to operator
+e
+n
+e
+e
+s
+x gate
+n
+w
+w
+w
+n
+talk employee
+s
+w
+n
+x office
+talk to officer
+take paper
+n
+n
+put brochure in door
+e
+take quill
+x dustbin
+take sheet
+w
+s
+s
+s
+s
+talk to clerk
+x sheet
+n
+e
+n
+give order to employee
+s
+w
+n
+n
+n
+n
+n
+e
+e
+search 12
+w
+w
+s
+s
+s
+s
+e
+e
+n
+talk clerk
+
+talk clerk
+
+
+
+
+talk father
+show letter to father
+take car
+s
+s
+talk to Temistocle
+
+n
+n
+e
+e
+s
+s
+s
+
+n
+n
+n
+e
+e
+take tram
+
+
+
+w
+w
+n
+e
+try Fibonacci
+n
+x statue
+up
+x corpse
+search girder
+take fascicule
+down
+s
+w
+s
+w
+w
+drive car
+read telegram
+drive car
+e
+s
+talk with Antonia
+
+
+n
+w
+s
+e
+e
+talk to librarian
+read book
+w
+w
+n
+n
+e
+s
+talk to Antonia
+
+
+x work in progress
+x box
+take lamp
+take rope
+turn on lamp
+d
+e
+e
+e
+x garbage
+take crowbar
+w
+w
+demolish wall
+s
+e
+s
+s
+e
+n
+take lantern
+e
+take stick
+w
+n
+n
+w
+n
+e
+take grease
+w
+s
+d
+pour oil on mechanism
+turn crank
+u
+e
+s
+tie rope to the grate
+d
+s
+s
+ignite stick
+throw torch
+w
+up
+
+
+
+
+touch walls
+push walls
+w
+n
+take sandals
+s
+wear goggles
+pull lever
+up
+w
+
+e
+open window
+jump outside
+
+e

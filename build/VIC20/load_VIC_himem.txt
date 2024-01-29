@@ -1,0 +1,8 @@
+lo=01:hi=32
+
+poke 43,lo:poke 44,hi:poke 256*hi+lo-1,0:new
+
+load "vic-silkdust1",8,1
+load "himem1.bin",8,1
+sys8205
+

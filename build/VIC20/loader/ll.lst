@@ -1,0 +1,2070 @@
+ca65 V2.18 - Git 39c0abed
+Main file   : vic40loader.s
+Current file: vic40loader.s
+
+000000r 1                       PUTCH = $FFD2           ; Print the PETSCII char in A
+000000r 1                       SETLFS = $FFBA          ; Set file parameters
+000000r 1                       SETNAM = $FFBD          ; Set file name parameters
+000000r 1                       LOAD = $FFD5            ; Load file
+000000r 1                       CHKOUT = $FFC9          ; Set the default output device
+000000r 1                       OPEN = $FFC0            ; Open a file
+000000r 1                       CLRSCR = $E55F          ; Clear screen
+000000r 1                       GETIN =  $FFE4          ; Get a key from the keyboard
+000000r 1               
+000000r 1               
+000000r 1               ; General-use addresses
+000000r 1                       GRCHARS1 = $1C00    ; Address of user-defined characters.
+000000r 1                       GRCHARS2 = $1100    ; Address of bitmap area shown during the loader
+000000r 1                                           ; (and then used by the 40 column driver).
+000000r 1               
+000000r 1                       VIC_DEFAULT=$EDE4   ; Table of the default values of VIC registers
+000000r 1               
+000000r 1               
+000000r 1               ; VIC-chip addresses
+000000r 1                       VICSCRHO = $9000    ; Horizontal position of the screen
+000000r 1                       VICSCRVE = $9001    ; Vertical position of the screen
+000000r 1                       VICCOLNC = $9002    ; Screen width in columns and video memory addr.
+000000r 1                       VICROWNC = $9003    ; Screen height, 8x8 or 8x16 chars, scan line addr.
+000000r 1                       VICRAST  = $9004    ; Bits 8-1 of the current raster line
+000000r 1                       VICCHGEN = $9005    ; Character gen. and video matrix addresses.
+000000r 1                       GEN1     = $900A    ; First sound generator
+000000r 1                       GEN2     = $900B    ; Second sound generator
+000000r 1                       GEN3     = $900C    ; Third sound generator
+000000r 1                       NOISE    = $900D    ; Noise sound generator
+000000r 1                       VOLUME   = $900E    ; Volume and additional colour info
+000000r 1                       VICCOLOR = $900F    ; Screen and border colours
+000000r 1               
+000000r 1                       FREEAREA = $033C    ; Tiny little free memory area
+000000r 1               
+000000r 1                       MEMSCR   = $1000    ; Start address of the screen memory (unexp. VIC)
+000000r 1                       MEMCLR   = $9400    ; Start address of the colour memory (unexp. VIC)
+000000r 1               
+000000r 1               loadHn = $17
+000000r 1               loadHl = $19
+000000r 1               
+000000r 1               
+000000r 1               .export _doload
+000000r 1               .importzp ptr1
+000000r 1               
+000000r 1               .segment "STARTUP"
+000000r 1               .segment "LOWCODE"
+000000r 1               .segment "LOADHI"
+000000r 1               .segment "HIMEM"
+000000r 1               .segment "INIT"
+000000r 1               .segment "ONCE"
+000000r 1               .segment "BSS"
+000000r 1               .segment "FILLER"
+000000r 1               ; Reserve space that will be used for the graphic screens
+000000r 1  EA EA EA EA  .res    $1000, $EA
+000004r 1  EA EA EA EA  
+000008r 1  EA EA EA EA  
+001000r 1               .segment "CODE"
+000000r 1               
+000000r 1               
+000000r 1  20 5F E5     _doload:    jsr CLRSCR
+000003r 1  A9 rr                    lda #<CheckExp      ; Print the 32KB check message
+000005r 1  A0 rr                    ldy #>CheckExp
+000007r 1  20 rr rr                 jsr PrintStr
+00000Ar 1  20 rr rr                 jsr checkexp        ; Check if the 32KB expansion is installed
+00000Dr 1  90 0F                    bcc @ok
+00000Fr 1  A9 rr                    lda #<CheckErr
+000011r 1  A0 rr                    ldy #>CheckErr
+000013r 1  20 rr rr                 jsr PrintStr
+000016r 1  A9 2A                    lda #42             ; Set the screen and border colours
+000018r 1  8D 0F 90                 sta VICCOLOR
+00001Br 1  4C rr rr     @stop:      jmp @stop           ; Hang the computer here
+00001Er 1               @ok:
+00001Er 1  A9 rr                    lda #<CheckOK       ; Print (briefly) that everything is OK
+000020r 1  A0 rr                    ldy #>CheckOK
+000022r 1  20 rr rr                 jsr PrintStr
+000025r 1               
+000025r 1  A6 BA                    ldx 186             ; Get the last opened device
+000027r 1  D0 02                    bne @nozero         ; check if the device is zero
+000029r 1  A2 08                    ldx #8              ; Default device 8 if loader reads from FLASH
+00002Br 1  A9 02        @nozero:    lda #2              ; File logic number
+00002Dr 1  A0 FF                    ldy #255            ; Secondary address (command)
+00002Fr 1  20 BA FF                 jsr SETLFS
+000032r 1               
+000032r 1  A9 64                    lda #100            ; Disable RUN/STOP, RESTORE
+000034r 1  8D 28 03                 sta $328
+000037r 1  20 rr rr                 jsr Init
+00003Ar 1               @askkey:                        ; Ask for a choice
+00003Ar 1  20 rr rr                 jsr _cgetc40ch
+00003Dr 1  C9 31                    cmp #'1'
+00003Fr 1  F0 0B                    beq @load1
+000041r 1  C9 32                    cmp #'2'
+000043r 1  F0 1C                    beq @load2
+000045r 1  C9 33                    cmp #'3'
+000047r 1  F0 2D                    beq @load3
+000049r 1  4C rr rr                 jmp @askkey
+00004Cr 1               @load1:
+00004Cr 1  A9 A6                    lda #<(Hi1Name-@tocopy+FREEAREA)
+00004Er 1  85 17                    sta loadHn
+000050r 1  A9 03                    lda #>(Hi1Name-@tocopy+FREEAREA)
+000052r 1  85 18                    sta loadHn+1
+000054r 1  A9 0A                    lda #Hi1NameE-Hi1Name
+000056r 1  85 19                    sta loadHl
+000058r 1  A9 0B                    lda #PrgName1E-PrgName1   ; Filename length
+00005Ar 1  A2 rr                    ldx #<PrgName1
+00005Cr 1  A0 rr                    ldy #>PrgName1
+00005Er 1  4C rr rr                 jmp @doload
+000061r 1               
+000061r 1  A9 B0        @load2:     lda #<(Hi2Name-@tocopy+FREEAREA)
+000063r 1  85 17                    sta loadHn
+000065r 1  A9 03                    lda #>(Hi2Name-@tocopy+FREEAREA)
+000067r 1  85 18                    sta loadHn+1
+000069r 1  A9 0A                    lda #Hi2NameE-Hi2Name
+00006Br 1  85 19                    sta loadHl
+00006Dr 1  A9 0B                    lda #PrgName2E-PrgName2   ; Filename length
+00006Fr 1  A2 rr                    ldx #<PrgName2
+000071r 1  A0 rr                    ldy #>PrgName2
+000073r 1  4C rr rr                 jmp @doload
+000076r 1               
+000076r 1  A9 BA        @load3:     lda #<(Hi3Name-@tocopy+FREEAREA)
+000078r 1  85 17                    sta loadHn
+00007Ar 1  A9 03                    lda #>(Hi3Name-@tocopy+FREEAREA)
+00007Cr 1  85 18                    sta loadHn+1
+00007Er 1  A9 0A                    lda #Hi3NameE-Hi3Name
+000080r 1  85 19                    sta loadHl
+000082r 1  A9 0B                    lda #PrgName3E-PrgName3   ; Filename length
+000084r 1  A2 rr                    ldx #<PrgName3
+000086r 1  A0 rr                    ldy #>PrgName3
+000088r 1                           ;jmp @doload
+000088r 1               @doload:
+000088r 1  20 BD FF                 jsr SETNAM
+00008Br 1                           ;lda #$C0            ; Put back the normal char gen address.
+00008Br 1                           ;sta VICCHGEN
+00008Br 1               
+00008Br 1  20 rr rr                 jsr LoadScr
+00008Er 1               
+00008Er 1  A2 89                    ldx #(_cgetc40ch-@tocopy+1)
+000090r 1  CA           @loop:      dex
+000091r 1  BD rr rr                 lda @tocopy,X
+000094r 1  9D 3C 03                 sta FREEAREA,X
+000097r 1  E0 00                    cpx #0
+000099r 1  D0 F5                    bne @loop
+00009Br 1  4C 3C 03                 jmp FREEAREA
+00009Er 1               
+00009Er 1               @tocopy:                        ; This code is not executed here, but in the
+00009Er 1  A9 00                    lda #0              ; version starting from FREEAREA.
+0000A0r 1  A2 FF                    ldx #$FF
+0000A2r 1  A0 FF                    ldy #$FF
+0000A4r 1  20 D5 FF                 jsr LOAD
+0000A7r 1  B0 24                    bcs @error
+0000A9r 1  A6 BA                    ldx 186             ; Get the last opened device
+0000ABr 1  D0 02                    bne @nozero1        ; check if the device is zero
+0000ADr 1  A2 08                    ldx #8              ; Default device to 8 if loader read from FLASH
+0000AFr 1  A9 02        @nozero1:   lda #2              ; File logic number
+0000B1r 1  A0 FF                    ldy #255            ; Secondary address (command)
+0000B3r 1  20 BA FF                 jsr SETLFS
+0000B6r 1  A5 19                    lda loadHl          ; Load the high memory file
+0000B8r 1  A6 17                    ldx loadHn
+0000BAr 1  A4 18                    ldy loadHn+1
+0000BCr 1  20 BD FF                 jsr SETNAM
+0000BFr 1  A9 00                    lda #0
+0000C1r 1  A2 FF                    ldx #$FF
+0000C3r 1  A0 FF                    ldy #$FF
+0000C5r 1  20 D5 FF                 jsr LOAD
+0000C8r 1  B0 03                    bcs @error
+0000CAr 1  4C 0D 20                 jmp 8205            ; Launch the game!
+0000CDr 1               
+0000CDr 1  48           @error:     pha
+0000CEr 1  A2 C0                    ldx #$C0
+0000D0r 1  8E 05 90                 stx VICCHGEN
+0000D3r 1  A2 2E                    ldx #$2e
+0000D5r 1  8E 03 90                 stx VICROWNC
+0000D8r 1  A2 1B                    ldx #27
+0000DAr 1  8E 0F 90                 stx VICCOLOR
+0000DDr 1  20 5F E5                 jsr CLRSCR
+0000E0r 1  A9 45                    lda #'e'
+0000E2r 1  20 D2 FF                 jsr PUTCH
+0000E5r 1  A9 52                    lda #'r'
+0000E7r 1  20 D2 FF                 jsr PUTCH
+0000EAr 1  A9 52                    lda #'r'
+0000ECr 1  20 D2 FF                 jsr PUTCH
+0000EFr 1  A9 4F                    lda #'o'
+0000F1r 1  20 D2 FF                 jsr PUTCH
+0000F4r 1  A9 52                    lda #'r'
+0000F6r 1  20 D2 FF                 jsr PUTCH
+0000F9r 1  A9 20                    lda #' '
+0000FBr 1  20 D2 FF                 jsr PUTCH
+0000FEr 1  68                       pla
+0000FFr 1  18                       clc
+000100r 1  69 30                    adc #48
+000102r 1  20 D2 FF                 jsr PUTCH
+000105r 1  18                       clc
+000106r 1               
+000106r 1  90 FE        @here:      bcc @here
+000108r 1  48 49 4D 45  Hi1Name:   .byte "himem1.bin"
+00010Cr 1  4D 31 2E 42  
+000110r 1  49 4E        
+000112r 1               Hi1NameE:
+000112r 1  48 49 4D 45  Hi2Name:   .byte "himem2.bin"
+000116r 1  4D 32 2E 42  
+00011Ar 1  49 4E        
+00011Cr 1               Hi2NameE:
+00011Cr 1  48 49 4D 45  Hi3Name:   .byte "himem3.bin"
+000120r 1  4D 33 2E 42  
+000124r 1  49 4E        
+000126r 1               Hi3NameE:
+000126r 1               
+000126r 1               endArea:
+000126r 1               
+000126r 1               ; Get a keystroke and return it in the A register
+000126r 1               _cgetc40ch:
+000126r 1               @loop:
+000126r 1  20 E4 FF                 jsr GETIN       ; Last instruction is a TXA, Z flag is up to date
+000129r 1  F0 FB                    beq @loop
+00012Br 1  60                       rts
+00012Cr 1               
+00012Cr 1  20 rr rr     Init:       jsr CopyColours1
+00012Fr 1  20 rr rr                 jsr CopyScreen1
+000132r 1  20 rr rr                 jsr MovCh128_1
+000135r 1  A9 0F                    lda #15         ; Set the screen and border colours
+000137r 1  8D 0F 90                 sta VICCOLOR
+00013Ar 1  A9 CF                    lda #$CF        ; Move the character generator address to $1C00
+00013Cr 1  8D 05 90                 sta VICCHGEN    ; while leaving ch. 128-255 to their original pos.
+00013Fr 1  A9 F0                    lda #$F0        ; Turn off volume, set multicolour add. colour 14
+000141r 1  8D 0E 90                 sta VOLUME
+000144r 1  60                       rts
+000145r 1               
+000145r 1  20 rr rr     LoadScr:    jsr CopyColours2
+000148r 1  20 rr rr                 jsr CopyScreen2
+00014Br 1  20 rr rr                 jsr MovCh128_2
+00014Er 1  20 rr rr                 jsr _initGraphic
+000151r 1  60                       rts
+000152r 1               
+000152r 1               ; Very simple check for the presence of a 32KB RAM expansion
+000152r 1               ; If the test pass, the carry is clear
+000152r 1               ; If the test fails, the carry is set
+000152r 1               checkexp:
+000152r 1  A2 5A                    ldx #$5A
+000154r 1  A0 A5                    ldy #$A5
+000156r 1  8E 10 20                 stx $2010       ; Write in block 1
+000159r 1  8C 11 20                 sty $2011
+00015Cr 1  8E 10 40                 stx $4010       ; Write in block 2
+00015Fr 1  8C 11 40                 sty $4011
+000162r 1  8E 10 60                 stx $6010       ; Write in block 3
+000165r 1  8C 11 60                 sty $6011
+000168r 1  8E 10 A0                 stx $A010       ; Write in block 5
+00016Br 1  8C 11 A0                 sty $A011
+00016Er 1               
+00016Er 1  AE 10 20                 ldx $2010       ; Check block 1
+000171r 1  AC 11 20                 ldy $2011
+000174r 1  E0 5A                    cpx #$5A
+000176r 1  D0 30                    bne @fail
+000178r 1  C0 A5                    cpy #$A5
+00017Ar 1  D0 2C                    bne @fail
+00017Cr 1  AE 10 40                 ldx $4010       ; Check block 2
+00017Fr 1  AC 11 40                 ldy $4011
+000182r 1  E0 5A                    cpx #$5A
+000184r 1  D0 22                    bne @fail
+000186r 1  C0 A5                    cpy #$A5
+000188r 1  D0 1E                    bne @fail
+00018Ar 1  AE 10 60                 ldx $6010       ; Check block 3
+00018Dr 1  AC 11 60                 ldy $6011
+000190r 1  E0 5A                    cpx #$5A
+000192r 1  D0 14                    bne @fail
+000194r 1  C0 A5                    cpy #$A5
+000196r 1  D0 10                    bne @fail
+000198r 1  AE 10 A0                 ldx $A010       ; Check block 5
+00019Br 1  AC 11 A0                 ldy $A011
+00019Er 1  E0 5A                    cpx #$5A
+0001A0r 1  D0 06                    bne @fail
+0001A2r 1  C0 A5                    cpy #$A5
+0001A4r 1  D0 02                    bne @fail
+0001A6r 1  18                       clc
+0001A7r 1  60                       rts
+0001A8r 1               @fail:
+0001A8r 1  38                       sec
+0001A9r 1  60                       rts
+0001AAr 1               
+0001AAr 1               ; Print a string (null terminated) whose address is contained in A and
+0001AAr 1               ; Y
+0001AAr 1               
+0001AAr 1  85 rr        PrintStr:   sta ptr1
+0001ACr 1  84 rr                    sty ptr1+1
+0001AEr 1  A0 00                    ldy #0
+0001B0r 1  B1 rr        @loop:      lda (ptr1),Y
+0001B2r 1  F0 07                    beq @exit
+0001B4r 1  20 D2 FF                 jsr PUTCH
+0001B7r 1  C8                       iny
+0001B8r 1  4C rr rr                 jmp @loop
+0001BBr 1  60           @exit:      rts
+0001BCr 1               
+0001BCr 1               ; Copy the graphic chars. Screen 1
+0001BCr 1               
+0001BCr 1  A2 FF        MovCh128_1: ldx #255
+0001BEr 1  BD rr rr     @loop:      lda char_data1+0*$100,x
+0001C1r 1  9D 00 1C                 sta GRCHARS1  +0*$100,x
+0001C4r 1  BD rr rr                 lda char_data1+1*$100,x
+0001C7r 1  9D 00 1D                 sta GRCHARS1  +1*$100,x
+0001CAr 1  BD rr rr                 lda char_data1+2*$100,x
+0001CDr 1  9D 00 1E                 sta GRCHARS1  +2*$100,x
+0001D0r 1  BD rr rr                 lda char_data1+3*$100,x
+0001D3r 1  9D 00 1F                 sta GRCHARS1  +3*$100,x
+0001D6r 1  CA                       dex
+0001D7r 1  E0 FF                    cpx #255
+0001D9r 1  D0 E3                    bne @loop
+0001DBr 1  60                       rts
+0001DCr 1               
+0001DCr 1  A0 FF        CopyColours1:ldy #255
+0001DEr 1  B9 rr rr     @CopyMem:   lda colour_data1,y
+0001E1r 1  99 00 94                 sta MEMCLR,y
+0001E4r 1  B9 rr rr                 lda colour_data1+256,y
+0001E7r 1  99 00 95                 sta MEMCLR+256,y
+0001EAr 1  88                       dey
+0001EBr 1  C0 FF                    cpy #255
+0001EDr 1  D0 EF                    bne @CopyMem
+0001EFr 1               
+0001EFr 1  60                       rts
+0001F0r 1               
+0001F0r 1  A0 FF        CopyScreen1: ldy #255
+0001F2r 1  B9 rr rr     @CopyMem:   lda screen_data1,y
+0001F5r 1  99 00 10                 sta MEMSCR,y
+0001F8r 1  B9 rr rr                 lda screen_data1+256,y
+0001FBr 1  99 00 11                 sta MEMSCR+256,y
+0001FEr 1  88                       dey
+0001FFr 1  C0 FF                    cpy #255
+000201r 1  D0 EF                    bne @CopyMem
+000203r 1  60                       rts
+000204r 1               
+000204r 1               ; Copy the graphic chars. Screen 2
+000204r 1               
+000204r 1               ; Init graphic mode
+000204r 1               _initGraphic:
+000204r 1  A0 10                    ldy #$10
+000206r 1               @On_02:
+000206r 1  18                       clc
+000207r 1  B9 E4 ED                 lda VIC_DEFAULT,Y   ; Read default values from the KERNAL rom
+00020Ar 1  79 rr rr                 adc Offset,Y
+00020Dr 1  99 00 90                 sta $9000,Y
+000210r 1  88                       dey
+000211r 1  10 F3                    bpl @On_02
+000213r 1  60                       rts
+000214r 1               
+000214r 1               _normalText:
+000214r 1  A0 0F                    ldy #$F
+000216r 1               @On_02:
+000216r 1  B9 E4 ED                 lda VIC_DEFAULT,Y   ; Read default values from the KERNAL rom
+000219r 1  99 00 90                 sta $9000,Y
+00021Cr 1  88                       dey
+00021Dr 1  10 F7                    bpl @On_02
+00021Fr 1  20 5F E5                 jsr $e55f
+000222r 1  60                       rts
+000223r 1               
+000223r 1               
+000223r 1               
+000223r 1               ; Example config:
+000223r 1               ; C:9000  0c 26 1E 2e  00 cd 57 ea  ff ff 00 00  00 00 00 08
+000223r 1               ;          |  |  | |   |   | |  |   |  |  |  |   |  |  |  +-> 0:2Bor 3RV 4-7BK
+000223r 1               ;          |  |  | |   |   | |  |   |  |  |  |   |  |  +-> 0:3 Vol 4-7 XCol
+000223r 1               ;          |  |  | |   |   | |  |   |  |  |  |   |  +-> Noise freq.
+000223r 1               ;          |  |  | |   |   | |  |   |  |  |  |   +-> Osc. 3 freq.
+000223r 1               ;          |  |  | |   |   | |  |   |  |  |  +-> Osc. 2 freq.
+000223r 1               ;          |  |  | |   |   | |  |   |  |  +-> Osc. 1 freq.
+000223r 1               ;          |  |  | |   |   | |  |   |  +-> Paddle Y
+000223r 1               ;          |  |  | |   |   | |  |   +-> Paddle X
+000223r 1               ;          |  |  | |   |   | |  +-> Light pen vertical position.
+000223r 1               ;          |  |  | |   |   | +-> 0: 1, 1-7 Light pen horizontal.
+000223r 1               ;          |  |  | |   |   +-> 0-3 Char address, 4-7 Video address
+000223r 1               ;          |  |  | |   +-> Raster line (bits 8-1)
+000223r 1               ;          |  |  | +-> 0: 8/16 lines per char, 1-6 Number of cols, 7: Rast. b0
+000223r 1               ;          |  |  +-> 0-6: Number of columns 7: video address bit 9
+000223r 1               ;          |  +-> 0-7: Distance from origin to the first row
+000223r 1               ;          +-> 0-6: Distance from origin to the first column 7: interlace
+000223r 1               ;
+000223r 1               ; PAL system at startup:
+000223r 1               ; C:9000  0c 26 16 2e  00 c0 57 ea  ff ff 00 00  00 00 00 1b
+000223r 1               
+000223r 1               N_COL=20                ; Number of columns (0-32)
+000223r 1               N_ROW=12                ; Number of lines   (0-32)
+000223r 1               ADDRESS_CHARGEN=$C      ; Address of character generator (see table)
+000223r 1               ADDRESS_VIDEOMEM=$C     ; Address of character generator (see table)
+000223r 1               CHAR16LINES=1           ; Use 8 bytes per character or 16 bytes per character
+000223r 1               
+000223r 1               VOL=0                   ; Volume (0-15)
+000223r 1               XCOL=9                  ; Auxiliary colour (0-15)
+000223r 1               BACKGROUND=0            ; Background colour (0-15)
+000223r 1               BORDER=7                ; Border colour (0-7)
+000223r 1               REVERSE=1               ; Reverse background/foreground colours (0-1)
+000223r 1               
+000223r 1               Offset:
+000223r 1  00 00 FE EB      .byte 0, $00, 256+(N_COL-22), 256+((N_ROW)<<1+CHAR16LINES-$2E)
+000227r 1  00 0C            .byte $00, (ADDRESS_VIDEOMEM<<4+ADDRESS_CHARGEN)-$c0
+000229r 1  00 00 00 00      .byte $00, $00, $00, $00, $00, $00, $00, $00, VOL+XCOL<<4
+00022Dr 1  00 00 00 00  
+000231r 1  90           
+000232r 1  F4               .byte 256+(BACKGROUND<<4+REVERSE<<3+BORDER-27)
+000233r 1               
+000233r 1               ; Table of addresses for VIC memory addressing in register $05
+000233r 1               ; Value         VIC-chip                6502            NOTE
+000233r 1               ; -----------------------------------------------------------------------------
+000233r 1               ;   0 - $0      $0000 - 0000        $8000 - 32768   Normal Character ROM
+000233r 1               ;   1 - $1      $0400 - 1024        $8400 - 33792   Reverse Character ROM
+000233r 1               ;   2 - $2      $0800 - 2048        $8800 - 34816   Normal upper/lower ch. ROM
+000233r 1               ;   3 - $3      $0C00 - 3072        $8C00 - 35840   Reverse upper/lover ch. ROM
+000233r 1               ;   4 - $4      $1000 - 4096        $9000 - 36864   VIC/VIA chips (not usable)
+000233r 1               ;   5 - $5      $1400 - 5120        $9400 - 37888   Usually colour memory
+000233r 1               ;   6 - $6      $1800 - 6144        $9800 - 38912   Usually empty
+000233r 1               ;   7 - $7      $1C00 - 7168        $9C00 - 39936   Usually empty
+000233r 1               ;   8 - $8      $2000 - 8192        $0000 - 0       Page 0 (not usable)
+000233r 1               ;   9 - $9      $2400 - 9216        $0400 - 1024    Available with 3K expansion
+000233r 1               ;   10 - $A     $2800 - 10240       $0800 - 2048    Available with 3K expansion
+000233r 1               ;   11 - $B     $2C00 - 11264       $0C00 - 3072    Available with 3K expansion
+000233r 1               ;   12 - $C     $3000 - 12288       $1000 - 4096    Start of available RAM
+000233r 1               ;   13 - $D     $3400 - 13312       $1400 - 5120    Available
+000233r 1               ;   14 - $E     $3800 - 14336       $1800 - 6144    Available
+000233r 1               ;   15 - $F     $3C00 - 15360       $1C00 - 7168    Usually screen memory
+000233r 1               
+000233r 1               
+000233r 1               OFS=0
+000233r 1               
+000233r 1  A2 FF        MovCh128_2:   ldx #255
+000235r 1  BD rr rr     @loop:      lda char_data2+0*$100+OFS,x
+000238r 1  9D 00 11                 sta GRCHARS2  +0*$100,x
+00023Br 1  BD rr rr                 lda char_data2+1*$100+OFS,x
+00023Er 1  9D 00 12                 sta GRCHARS2  +1*$100,x
+000241r 1  BD rr rr                 lda char_data2+2*$100+OFS,x
+000244r 1  9D 00 13                 sta GRCHARS2  +2*$100,x
+000247r 1  BD rr rr                 lda char_data2+3*$100+OFS,x
+00024Ar 1  9D 00 14                 sta GRCHARS2  +3*$100,x
+00024Dr 1  BD rr rr                 lda char_data2+4*$100+OFS,x
+000250r 1  9D 00 15                 sta GRCHARS2  +4*$100,x
+000253r 1  BD rr rr                 lda char_data2+5*$100+OFS,x
+000256r 1  9D 00 16                 sta GRCHARS2  +5*$100,x
+000259r 1  BD rr rr                 lda char_data2+6*$100+OFS,x
+00025Cr 1  9D 00 17                 sta GRCHARS2  +6*$100,x
+00025Fr 1  BD rr rr                 lda char_data2+7*$100+OFS,x
+000262r 1  9D 00 18                 sta GRCHARS2  +7*$100,x
+000265r 1  BD rr rr                 lda char_data2+8*$100+OFS,x
+000268r 1  9D 00 19                 sta GRCHARS2  +8*$100,x
+00026Br 1  BD rr rr                 lda char_data2+9*$100+OFS,x
+00026Er 1  9D 00 1A                 sta GRCHARS2  +9*$100,x
+000271r 1  BD rr rr                 lda char_data2+10*$100+OFS,x
+000274r 1  9D 00 1B                 sta GRCHARS2  +10*$100,x
+000277r 1  BD rr rr                 lda char_data2+11*$100+OFS,x
+00027Ar 1  9D 00 1C                 sta GRCHARS2  +11*$100,x
+00027Dr 1  BD rr rr                 lda char_data2+12*$100+OFS,x
+000280r 1  9D 00 1D                 sta GRCHARS2  +12*$100,x
+000283r 1  BD rr rr                 lda char_data2+13*$100+OFS,x
+000286r 1  9D 00 1E                 sta GRCHARS2  +13*$100,x
+000289r 1  BD rr rr                 lda char_data2+14*$100+OFS,x
+00028Cr 1  9D 00 1F                 sta GRCHARS2  +14*$100,x
+00028Fr 1  BD rr rr                 lda char_data2+15*$100+OFS,x
+000292r 1  9D 00 20                 sta GRCHARS2  +15*$100,x
+000295r 1  BD rr rr                 lda char_data2+16*$100+OFS,x
+000298r 1  9D 00 21                 sta GRCHARS2  +16*$100,x
+00029Br 1  CA                       dex
+00029Cr 1  E0 FF                    cpx #255
+00029Er 1  D0 95                    bne @loop
+0002A0r 1  60                       rts
+0002A1r 1               
+0002A1r 1  A0 FF        CopyColours2:ldy #255
+0002A3r 1  B9 rr rr     @CopyMem:   lda colour_data2,y
+0002A6r 1  99 00 94                 sta MEMCLR,y
+0002A9r 1  B9 rr rr                 lda colour_data2+256,y
+0002ACr 1  99 00 95                 sta MEMCLR+256,y
+0002AFr 1  88                       dey
+0002B0r 1  C0 FF                    cpy #255
+0002B2r 1  D0 EF                    bne @CopyMem
+0002B4r 1               
+0002B4r 1  60                       rts
+0002B5r 1               
+0002B5r 1  A0 FF        CopyScreen2: ldy #255
+0002B7r 1  B9 rr rr     @CopyMem:   lda screen_data2,y
+0002BAr 1  99 00 10                 sta MEMSCR,y
+0002BDr 1                           ;lda screen_data2+256,y
+0002BDr 1                           ;sta MEMSCR+256,y
+0002BDr 1  88                       dey
+0002BEr 1  C0 FF                    cpy #255
+0002C0r 1  D0 F5                    bne @CopyMem
+0002C2r 1  60                       rts
+0002C3r 1               
+0002C3r 1               
+0002C3r 1  1F           LoadErr:    .byte 31
+0002C4r 1  4C 4F 41 44              .asciiz "load error"
+0002C8r 1  20 45 52 52  
+0002CCr 1  4F 52 00     
+0002CFr 1  9F           Loading:    .byte 159
+0002D0r 1  4C 4F 41 44              .asciiz "loading... please wait"
+0002D4r 1  49 4E 47 2E  
+0002D8r 1  2E 2E 20 50  
+0002E7r 1  90           CheckExp:   .byte 144   ; Code for the black cursor
+0002E8r 1  43 48 45 43              .asciiz "check 32kb exp.: "
+0002ECr 1  4B 20 33 32  
+0002F0r 1  4B 42 20 45  
+0002FAr 1  4F 4B 00     CheckOK:    .asciiz "ok"
+0002FDr 1  05           CheckErr:   .byte 5
+0002FEr 1  46 41 49 4C              .asciiz "fail!install 32kb exp."
+000302r 1  21 49 4E 53  
+000306r 1  54 41 4C 4C  
+000315r 1               
+000315r 1  51 55 45 45  PrgName1:   .byte "queens-vic1"
+000319r 1  4E 53 2D 56  
+00031Dr 1  49 43 31     
+000320r 1               PrgName1E:
+000320r 1  51 55 45 45  PrgName2:   .byte "queens-vic2"
+000324r 1  4E 53 2D 56  
+000328r 1  49 43 32     
+00032Br 1               PrgName2E:
+00032Br 1  51 55 45 45  PrgName3:   .byte "queens-vic3"
+00032Fr 1  4E 53 2D 56  
+000333r 1  49 43 33     
+000336r 1               PrgName3E:
+000336r 1               
+000336r 1               ;settings
+000336r 1               ;background-colour=0
+000336r 1               ;border-colour=7
+000336r 1               ;aux-colour=15
+000336r 1               ;char-height=8
+000336r 1               ;row-count=23
+000336r 1               ;col-count=22
+000336r 1               
+000336r 1               char_data1:
+000336r 1  FE 81 67 E7  .byte  $FE,$81,$67,$E7,$E7,$E7,$F7,$FB
+00033Ar 1  E7 E7 F7 FB  
+00033Er 1  C3 BF 7F 07  .byte  $C3,$BF,$7F,$07,$7F,$7F,$7F,$FF
+000342r 1  7F 7F 7F FF  
+000346r 1  FF FF 87 7B  .byte  $FF,$FF,$87,$7B,$7B,$7B,$87,$FF
+00034Ar 1  7B 7B 87 FF  
+00034Er 1  FF FF 83 7B  .byte  $FF,$FF,$83,$7B,$7B,$7B,$07,$7F
+000352r 1  7B 7B 07 7F  
+000356r 1  00 00 78 80  .byte  $00,$00,$78,$80,$78,$04,$F8,$00
+00035Ar 1  78 04 F8 00  
+00035Er 1  00 00 78 84  .byte  $00,$00,$78,$84,$F8,$82,$7C,$00
+000362r 1  F8 82 7C 00  
+000366r 1  00 18 18 18  .byte  $00,$18,$18,$18,$18,$18,$08,$04
+00036Ar 1  18 18 08 04  
+00036Er 1  00 00 7C 90  .byte  $00,$00,$7C,$90,$10,$10,$10,$08
+000372r 1  10 10 10 08  
+000376r 1  00 00 7C 84  .byte  $00,$00,$7C,$84,$84,$84,$F8,$80
+00037Ar 1  84 84 F8 80  
+00037Er 1  00 00 78 84  .byte  $00,$00,$78,$84,$84,$84,$88,$86
+000382r 1  84 84 88 86  
+000386r 1  FF FF 87 7F  .byte  $FF,$FF,$87,$7F,$87,$FB,$07,$FF
+00038Ar 1  87 FB 07 FF  
+00038Er 1  FF FF 87 7B  .byte  $FF,$FF,$87,$7B,$07,$7D,$83,$FF
+000392r 1  07 7D 83 FF  
+000396r 1  BF DF C3 DD  .byte  $BF,$DF,$C3,$DD,$DD,$DD,$DD,$FB
+00039Ar 1  DD DD DD FB  
+00039Er 1  FF FF 83 6F  .byte  $FF,$FF,$83,$6F,$EF,$EF,$EF,$F7
+0003A2r 1  EF EF EF F7  
+0003A6r 1  00 00 78 84  .byte  $00,$00,$78,$84,$84,$84,$7E,$00
+0003AAr 1  84 84 7E 00  
+0003AEr 1  FF FF C3 BD  .byte  $FF,$FF,$C3,$BD,$BD,$BD,$BD,$FE
+0003B2r 1  BD BD BD FE  
+0003B6r 1  87 7B 7D 7D  .byte  $87,$7B,$7D,$7D,$7D,$79,$81,$FE
+0003BAr 1  7D 79 81 FE  
+0003BEr 1  00 00 78 80  .byte  $00,$00,$78,$80,$80,$80,$78,$00
+0003C2r 1  80 80 78 00  
+0003C6r 1  FF FF 7D 7B  .byte  $FF,$FF,$7D,$7B,$7B,$7B,$87,$FF
+0003CAr 1  7B 7B 87 FF  
+0003CEr 1  EF EF DF BF  .byte  $EF,$EF,$DF,$BF,$FF,$FF,$FF,$FF
+0003D2r 1  FF FF FF FF  
+0003D6r 1  00 00 03 FF  .byte  $00,$00,$03,$FF,$FF,$FF,$FF,$FC
+0003DAr 1  FF FF FF FC  
+0003DEr 1  00 00 00 00  .byte  $00,$00,$00,$00,$01,$02,$02,$01
+0003E2r 1  01 02 02 01  
+0003E6r 1  7F C0 9F BF  .byte  $7F,$C0,$9F,$BF,$30,$60,$60,$60
+0003EAr 1  30 60 60 60  
+0003EEr 1  73 71 61 60  .byte  $73,$71,$61,$60,$2E,$A9,$AC,$AB
+0003F2r 1  2E A9 AC AB  
+0003F6r 1  B0 90 98 89  .byte  $B0,$90,$98,$89,$60,$20,$10,$0D
+0003FAr 1  60 20 10 0D  
+0003FEr 1  05 05 04 02  .byte  $05,$05,$04,$02,$02,$02,$02,$02
+000402r 1  02 02 02 02  
+000406r 1  0E 71 82 82  .byte  $0E,$71,$82,$82,$1C,$E0,$00,$00
+00040Ar 1  1C E0 00 00  
+00040Er 1  01 02 02 02  .byte  $01,$02,$02,$02,$02,$02,$01,$00
+000412r 1  02 02 01 00  
+000416r 1  01 01 01 01  .byte  $01,$01,$01,$01,$01,$01,$01,$01
+00041Ar 1  01 01 01 01  
+00041Er 1  AB 57 2B 57  .byte  $AB,$57,$2B,$57,$AB,$57,$2B,$57
+000422r 1  AB 57 2B 57  
+000426r 1  01 01 01 01  .byte  $01,$01,$01,$01,$01,$00,$00,$00
+00042Ar 1  01 00 00 00  
+00042Er 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+000432r 1  FF FF FF FF  
+000436r 1  00 00 00 00  .byte  $00,$00,$00,$00,$00,$00,$00,$00
+00043Ar 1  00 00 00 00  
+00043Er 1  00 00 00 00  .byte  $00,$00,$00,$00,$00,$00,$00,$00
+000442r 1  00 00 00 00  
+000446r 1  6F BF 6F BF  .byte  $6F,$BF,$6F,$BF,$6F,$BF,$6F,$BF
+00044Ar 1  6F BF 6F BF  
+00044Er 1  00 00 3F 40  .byte  $00,$00,$3F,$40,$C0,$1F,$20,$A0
+000452r 1  C0 1F 20 A0  
+000456r 1  BF 3F 00 00  .byte  $BF,$3F,$00,$00,$7F,$7F,$00,$00
+00045Ar 1  7F 7F 00 00  
+00045Er 1  FF FF FF 00  .byte  $FF,$FF,$FF,$00,$6E,$BB,$6F,$BF
+000462r 1  6E BB 6F BF  
+000466r 1  00 00 18 28  .byte  $00,$00,$18,$28,$08,$08,$1C,$00
+00046Ar 1  08 08 1C 00  
+00046Er 1  6F BF 6F 3F  .byte  $6F,$BF,$6F,$3F,$6F,$3F,$6F,$3F
+000472r 1  6F 3F 6F 3F  
+000476r 1  3F 9F 4F 4F  .byte  $3F,$9F,$4F,$4F,$4F,$27,$63,$80
+00047Ar 1  4F 27 63 80  
+00047Er 1  30 7F 7F 7F  .byte  $30,$7F,$7F,$7F,$3F,$3F,$1F,$41
+000482r 1  3F 3F 1F 41  
+000486r 1  28 58 2F 5B  .byte  $28,$58,$2F,$5B,$2F,$5B,$2F,$5B
+00048Ar 1  2F 5B 2F 5B  
+00048Er 1  6F 1B 2F 1B  .byte  $6F,$1B,$2F,$1B,$2F,$1B,$2F,$1B
+000492r 1  2F 1B 2F 1B  
+000496r 1  2F 5B 2F 5B  .byte  $2F,$5B,$2F,$5B,$2F,$8B,$8F,$E1
+00049Ar 1  2F 8B 8F E1  
+00049Er 1  10 10 0F 00  .byte  $10,$10,$0F,$00,$00,$00,$00,$00
+0004A2r 1  00 00 00 00  
+0004A6r 1  FC FC FC F0  .byte  $FC,$FC,$FC,$F0,$C0,$00,$00,$00
+0004AAr 1  C0 00 00 00  
+0004AEr 1  00 08 14 04  .byte  $00,$08,$14,$04,$08,$10,$1C,$00
+0004B2r 1  08 10 1C 00  
+0004B6r 1  00 08 14 04  .byte  $00,$08,$14,$04,$08,$04,$18,$00
+0004BAr 1  08 04 18 00  
+0004BEr 1  00 00 FC 02  .byte  $00,$00,$FC,$02,$01,$88,$80,$E0
+0004C2r 1  01 88 80 E0  
+0004C6r 1  E0 88 0C 0F  .byte  $E0,$88,$0C,$0F,$FF,$FF,$00,$00
+0004CAr 1  FF FF 00 00  
+0004CEr 1  FF FF FF 7F  .byte  $FF,$FF,$FF,$7F,$00,$FF,$FF,$FF
+0004D2r 1  00 FF FF FF  
+0004D6r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+0004DAr 1  FF FF FF FF  
+0004DEr 1  00 08 10 20  .byte  $00,$08,$10,$20,$28,$3C,$08,$00
+0004E2r 1  28 3C 08 00  
+0004E6r 1  00 00 08 08  .byte  $00,$00,$08,$08,$3E,$08,$08,$00
+0004EAr 1  3E 08 08 00  
+0004EEr 1  3F 00 00 FF  .byte  $3F,$00,$00,$FF,$FF,$FF,$FF,$FF
+0004F2r 1  FF FF FF FF  
+0004F6r 1  00 00 E0 FF  .byte  $00,$00,$E0,$FF,$FF,$FF,$FF,$FF
+0004FAr 1  FF FF FF FF  
+0004FEr 1  3C 40 40 3C  .byte  $3C,$40,$40,$3C,$02,$02,$3C,$00
+000502r 1  02 02 3C 00  
+000506r 1  00 FF 00 00  .byte  $00,$FF,$00,$00,$00,$00,$00,$00
+00050Ar 1  00 00 00 00  
+00050Er 1  7F 7F 00 FF  .byte  $7F,$7F,$00,$FF,$00,$00,$00,$00
+000512r 1  00 00 00 00  
+000516r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+00051Ar 1  FF FF FF FF  
+00051Er 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+000522r 1  FF FF FF FF  
+000526r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+00052Ar 1  FF FF FF FF  
+00052Er 1  00 00 00 00  .byte  $00,$00,$00,$00,$E0,$10,$50,$50
+000532r 1  E0 10 50 50  
+000536r 1  5F 4F C0 C0  .byte  $5F,$4F,$C0,$C0,$FC,$FF,$00,$00
+00053Ar 1  FC FF 00 00  
+00053Er 1  FF FF FF 00  .byte  $FF,$FF,$FF,$00,$10,$AA,$D4,$AA
+000542r 1  10 AA D4 AA  
+000546r 1  D5 EA D4 EA  .byte  $D5,$EA,$D4,$EA,$D5,$EA,$D4,$EA
+00054Ar 1  D5 EA D4 EA  
+00054Er 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+000552r 1  FF FF FF FF  
+000556r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+00055Ar 1  FF FF FF FF  
+00055Er 1  F8 00 00 FF  .byte  $F8,$00,$00,$FF,$FF,$FF,$FE,$F8
+000562r 1  FF FF FE F8  
+000566r 1  05 02 D5 EA  .byte  $05,$02,$D5,$EA,$D5,$EA,$D5,$EA
+00056Ar 1  D5 EA D5 EA  
+00056Er 1  D5 EA D5 EA  .byte  $D5,$EA,$D5,$EA,$D5,$EA,$D5,$EA
+000572r 1  D5 EA D5 EA  
+000576r 1  D5 EA D5 EA  .byte  $D5,$EA,$D5,$EA,$D5,$EA,$D5,$EA
+00057Ar 1  D5 EA D5 EA  
+00057Er 1  D4 EA 01 FE  .byte  $D4,$EA,$01,$FE,$00,$00,$00,$00
+000582r 1  00 00 00 00  
+000586r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+00058Ar 1  FF FF FF FF  
+00058Er 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+000592r 1  FF FF FF FF  
+000596r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+00059Ar 1  FF FF FF FF  
+00059Er 1  00 00 00 00  .byte  $00,$00,$00,$00,$00,$01,$02,$02
+0005A2r 1  00 01 02 02  
+0005A6r 1  02 04 85 7D  .byte  $02,$04,$85,$7D,$01,$E3,$03,$03
+0005AAr 1  01 E3 03 03  
+0005AEr 1  F7 F7 F7 07  .byte  $F7,$F7,$F7,$07,$07,$0F,$0F,$0F
+0005B2r 1  07 0F 0F 0F  
+0005B6r 1  0F 0F 0F 0F  .byte  $0F,$0F,$0F,$0F,$1E,$1E,$1C,$18
+0005BAr 1  1E 1E 1C 18  
+0005BEr 1  18 18 38 3F  .byte  $18,$18,$38,$3F,$3F,$3F,$1F,$9F
+0005C2r 1  3F 3F 1F 9F  
+0005C6r 1  1F 1F 1F 1F  .byte  $1F,$1F,$1F,$1F,$1F,$1F,$1F,$0F
+0005CAr 1  1F 1F 1F 0F  
+0005CEr 1  0F 0F CF CF  .byte  $0F,$0F,$CF,$CF,$CF,$8F,$07,$87
+0005D2r 1  CF 8F 07 87  
+0005D6r 1  07 87 47 87  .byte  $07,$87,$47,$87,$07,$83,$43,$81
+0005DAr 1  07 83 43 81  
+0005DEr 1  01 80 40 80  .byte  $01,$80,$40,$80,$01,$81,$41,$81
+0005E2r 1  01 81 41 81  
+0005E6r 1  03 82 42 84  .byte  $03,$82,$42,$84,$04,$88,$48,$10
+0005EAr 1  04 88 48 10  
+0005EEr 1  20 40 80 00  .byte  $20,$40,$80,$00,$00,$00,$00,$00
+0005F2r 1  00 00 00 00  
+0005F6r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+0005FAr 1  FF FF FF FF  
+0005FEr 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+000602r 1  FF FF FF FF  
+000606r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+00060Ar 1  FF FF FF FF  
+00060Er 1  0F 18 60 8F  .byte  $0F,$18,$60,$8F,$8F,$1F,$7F,$7F
+000612r 1  8F 1F 7F 7F  
+000616r 1  7F FF FF FF  .byte  $7F,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+00061Ar 1  FF FF FF FF  
+00061Er 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+000622r 1  FF FF FF FF  
+000626r 1  55 55 55 55  .byte  $55,$55,$55,$55,$4F,$2A,$2A,$2A
+00062Ar 1  4F 2A 2A 2A  
+00062Er 1  AA AA 2A 2A  .byte  $AA,$AA,$2A,$2A,$40,$57,$55,$55
+000632r 1  40 57 55 55  
+000636r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+00063Ar 1  FF FF FF FF  
+00063Er 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+000642r 1  FF FF FF FF  
+000646r 1  FF FF FE FE  .byte  $FF,$FF,$FE,$FE,$FE,$FC,$FD,$FE
+00064Ar 1  FE FC FD FE  
+00064Er 1  F1 E2 04 18  .byte  $F1,$E2,$04,$18,$E0,$00,$00,$00
+000652r 1  E0 00 00 00  
+000656r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+00065Ar 1  FF FF FF FF  
+00065Er 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+000662r 1  FF FF FF FF  
+000666r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+00066Ar 1  FF FF FF FF  
+00066Er 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+000672r 1  FF FF FF FF  
+000676r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+00067Ar 1  FF FF FF FF  
+00067Er 1  00 00 80 40  .byte  $00,$00,$80,$40,$40,$20,$A0,$A0
+000682r 1  40 20 A0 A0  
+000686r 1  A0 90 D0 D0  .byte  $A0,$90,$D0,$D0,$D0,$E8,$E8,$E8
+00068Ar 1  D0 E8 E8 E8  
+00068Er 1  E8 E8 F4 F4  .byte  $E8,$E8,$F4,$F4,$F4,$F4,$F4,$F4
+000692r 1  F4 F4 F4 F4  
+000696r 1  54 54 54 57  .byte  $54,$54,$54,$57,$FF,$FF,$FF,$BF
+00069Ar 1  FF FF FF BF  
+00069Er 1  EF AF AB 2F  .byte  $EF,$AF,$AB,$2F,$FF,$FC,$50,$50
+0006A2r 1  FF FC 50 50  
+0006A6r 1  E2 E4 E4 E4  .byte  $E2,$E4,$E4,$E4,$E4,$E8,$C8,$C8
+0006AAr 1  E4 E8 C8 C8  
+0006AEr 1  C8 D0 90 90  .byte  $C8,$D0,$90,$90,$A0,$20,$20,$20
+0006B2r 1  A0 20 20 20  
+0006B6r 1  40 40 40 80  .byte  $40,$40,$40,$80,$80,$80,$00,$00
+0006BAr 1  80 80 00 00  
+0006BEr 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+0006C2r 1  FF FF FF FF  
+0006C6r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+0006CAr 1  FF FF FF FF  
+0006CEr 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+0006D2r 1  FF FF FF FF  
+0006D6r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+0006DAr 1  FF FF FF FF  
+0006DEr 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+0006E2r 1  FF FF FF FF  
+0006E6r 1  00 01 00 01  .byte  $00,$01,$00,$01,$00,$01,$00,$01
+0006EAr 1  00 01 00 01  
+0006EEr 1  00 00 02 00  .byte  $00,$00,$02,$00,$02,$00,$04,$00
+0006F2r 1  02 00 04 00  
+0006F6r 1  04 04 00 04  .byte  $04,$04,$00,$04,$04,$00,$08,$00
+0006FAr 1  04 00 08 00  
+0006FEr 1  00 08 00 00  .byte  $00,$08,$00,$00,$08,$00,$00,$08
+000702r 1  08 00 00 08  
+000706r 1  00 04 04 00  .byte  $00,$04,$04,$00,$00,$02,$00,$02
+00070Ar 1  00 02 00 02  
+00070Er 1  00 02 00 02  .byte  $00,$02,$00,$02,$00,$02,$00,$02
+000712r 1  00 02 00 02  
+000716r 1  00 02 00 02  .byte  $00,$02,$00,$02,$00,$02,$00,$02
+00071Ar 1  00 02 00 02  
+00071Er 1  00 02 00 02  .byte  $00,$02,$00,$02,$00,$02,$00,$02
+000722r 1  00 02 00 02  
+000726r 1  00 04 00 08  .byte  $00,$04,$00,$08,$10,$00,$20,$20
+00072Ar 1  10 00 20 20  
+00072Er 1  00 00 40 00  .byte  $00,$00,$40,$00,$40,$00,$40,$00
+000732r 1  40 00 40 00  
+000736r 1  E3 DD B5 A9  .byte  $E3,$DD,$B5,$A9,$B3,$DF,$E1,$FF
+00073Ar 1  B3 DF E1 FF  
+00073Er 1               ; .byte  $E7,$DB,$BD,$81,$BD,$BD,$BD,$FF
+00073Er 1               ; .byte  $83,$DD,$DD,$C3,$DD,$DD,$83,$FF
+00073Er 1               ; .byte  $E3,$DD,$BF,$BF,$BF,$DD,$E3,$FF
+00073Er 1               ; .byte  $87,$DB,$DD,$DD,$DD,$DB,$87,$FF
+00073Er 1               ; .byte  $81,$BF,$BF,$87,$BF,$BF,$81,$FF
+00073Er 1               ; .byte  $81,$BF,$BF,$87,$BF,$BF,$BF,$FF
+00073Er 1               ; .byte  $E3,$DD,$BF,$B1,$BD,$DD,$E3,$FF
+00073Er 1               ; .byte  $BD,$BD,$BD,$81,$BD,$BD,$BD,$FF
+00073Er 1               ; .byte  $E3,$F7,$F7,$F7,$F7,$F7,$E3,$FF
+00073Er 1               ; .byte  $F1,$FB,$FB,$FB,$FB,$BB,$C7,$FF
+00073Er 1               ; .byte  $BD,$BB,$B7,$8F,$B7,$BB,$BD,$FF
+00073Er 1               ; .byte  $BF,$BF,$BF,$BF,$BF,$BF,$81,$FF
+00073Er 1               ; .byte  $BD,$99,$A5,$A5,$BD,$BD,$BD,$FF
+00073Er 1               ; .byte  $BD,$9D,$AD,$B5,$B9,$BD,$BD,$FF
+00073Er 1               ; .byte  $E7,$DB,$BD,$BD,$BD,$DB,$E7,$FF
+00073Er 1               ; .byte  $83,$BD,$BD,$83,$BF,$BF,$BF,$FF
+00073Er 1               ; .byte  $E7,$DB,$BD,$BD,$B5,$DB,$E5,$FF
+00073Er 1               ; .byte  $83,$BD,$BD,$83,$B7,$BB,$BD,$FF
+00073Er 1               ; .byte  $C3,$BD,$BF,$C3,$FD,$BD,$C3,$FF
+00073Er 1               ; .byte  $C1,$F7,$F7,$F7,$F7,$F7,$F7,$FF
+00073Er 1               ; .byte  $BD,$BD,$BD,$BD,$BD,$BD,$C3,$FF
+00073Er 1               ; .byte  $BD,$BD,$BD,$DB,$DB,$E7,$E7,$FF
+00073Er 1               ; .byte  $BD,$BD,$BD,$A5,$A5,$99,$BD,$FF
+00073Er 1               ; .byte  $BD,$BD,$DB,$E7,$DB,$BD,$BD,$FF
+00073Er 1               ; .byte  $DD,$DD,$DD,$E3,$F7,$F7,$F7,$FF
+00073Er 1               ; .byte  $81,$FD,$FB,$E7,$DF,$BF,$81,$FF
+00073Er 1               ; .byte  $C3,$DF,$DF,$DF,$DF,$DF,$C3,$FF
+00073Er 1               ; .byte  $F3,$EF,$EF,$C3,$EF,$8F,$91,$FF
+00073Er 1               ; .byte  $C3,$FB,$FB,$FB,$FB,$FB,$C3,$FF
+00073Er 1               ; .byte  $FF,$F7,$E3,$D5,$F7,$F7,$F7,$F7
+00073Er 1               ; .byte  $FF,$FF,$EF,$DF,$80,$DF,$EF,$FF
+00073Er 1               ; .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+00073Er 1               ; .byte  $F7,$F7,$F7,$F7,$FF,$FF,$F7,$FF
+00073Er 1               ; .byte  $DB,$DB,$DB,$FF,$FF,$FF,$FF,$FF
+00073Er 1               ; .byte  $DB,$DB,$81,$DB,$81,$DB,$DB,$FF
+00073Er 1               ; .byte  $F7,$E1,$D7,$E3,$F5,$C3,$F7,$FF
+00073Er 1               ; .byte  $FF,$9D,$9B,$F7,$EF,$D9,$B9,$FF
+00073Er 1               ; .byte  $CF,$B7,$B7,$CF,$B5,$BB,$C5,$FF
+00073Er 1               ; .byte  $FB,$F7,$EF,$FF,$FF,$FF,$FF,$FF
+00073Er 1               ; .byte  $FB,$F7,$EF,$EF,$EF,$F7,$FB,$FF
+00073Er 1               ; .byte  $DF,$EF,$F7,$F7,$F7,$EF,$DF,$FF
+00073Er 1               ; .byte  $F7,$D5,$E3,$C1,$E3,$D5,$F7,$FF
+00073Er 1               ; .byte  $FF,$F7,$F7,$C1,$F7,$F7,$FF,$FF
+00073Er 1               ; .byte  $FF,$FF,$FF,$FF,$FF,$F7,$F7,$EF
+00073Er 1               ; .byte  $FF,$FF,$FF,$81,$FF,$FF,$FF,$FF
+00073Er 1               ; .byte  $FF,$FF,$FF,$FF,$FF,$E7,$E7,$FF
+00073Er 1               ; .byte  $FF,$FD,$FB,$F7,$EF,$DF,$BF,$FF
+00073Er 1               ; .byte  $C3,$BD,$B9,$A5,$9D,$BD,$C3,$FF
+00073Er 1               ; .byte  $F7,$E7,$D7,$F7,$F7,$F7,$C1,$FF
+00073Er 1               ; .byte  $C3,$BD,$FD,$F3,$CF,$BF,$81,$FF
+00073Er 1               ; .byte  $C3,$BD,$FD,$E3,$FD,$BD,$C3,$FF
+00073Er 1               ; .byte  $FB,$F3,$EB,$DB,$81,$FB,$FB,$FF
+00073Er 1               ; .byte  $81,$BF,$87,$FB,$FD,$BB,$C7,$FF
+00073Er 1               ; .byte  $E3,$DF,$BF,$83,$BD,$BD,$C3,$FF
+00073Er 1               ; .byte  $81,$BD,$FB,$F7,$EF,$EF,$EF,$FF
+00073Er 1               ; .byte  $C3,$BD,$BD,$C3,$BD,$BD,$C3,$FF
+00073Er 1               ; .byte  $C3,$BD,$BD,$C1,$FD,$FB,$C7,$FF
+00073Er 1               ; .byte  $FF,$FF,$F7,$FF,$FF,$F7,$FF,$FF
+00073Er 1               ; .byte  $FF,$FF,$F7,$FF,$FF,$F7,$F7,$EF
+00073Er 1               ; .byte  $F1,$E7,$CF,$9F,$CF,$E7,$F1,$FF
+00073Er 1               ; .byte  $FF,$FF,$81,$FF,$81,$FF,$FF,$FF
+00073Er 1               ; .byte  $8F,$E7,$F3,$F9,$F3,$E7,$8F,$FF
+00073Er 1               ; .byte  $C3,$BD,$FD,$F3,$EF,$FF,$EF,$FF
+00073Er 1               ; .byte  $FF,$FF,$FF,$FF,$00,$FF,$FF,$FF
+00073Er 1               ; .byte  $F7,$E3,$C1,$80,$80,$E3,$C1,$FF
+00073Er 1               ; .byte  $EF,$EF,$EF,$EF,$EF,$EF,$EF,$EF
+00073Er 1               ; .byte  $FF,$FF,$FF,$00,$FF,$FF,$FF,$FF
+00073Er 1               ; .byte  $FF,$FF,$00,$FF,$FF,$FF,$FF,$FF
+00073Er 1               ; .byte  $FF,$00,$FF,$FF,$FF,$FF,$FF,$FF
+00073Er 1               ; .byte  $FF,$FF,$FF,$FF,$FF,$00,$FF,$FF
+00073Er 1               ; .byte  $DF,$DF,$DF,$DF,$DF,$DF,$DF,$DF
+00073Er 1               ; .byte  $FB,$FB,$FB,$FB,$FB,$FB,$FB,$FB
+00073Er 1               ; .byte  $FF,$FF,$FF,$FF,$1F,$EF,$F7,$F7
+00073Er 1               ; .byte  $F7,$F7,$F7,$FB,$FC,$FF,$FF,$FF
+00073Er 1               ; .byte  $F7,$F7,$F7,$EF,$1F,$FF,$FF,$FF
+00073Er 1               ; .byte  $7F,$7F,$7F,$7F,$7F,$7F,$7F,$00
+00073Er 1               ; .byte  $7F,$BF,$DF,$EF,$F7,$FB,$FD,$FE
+00073Er 1               ; .byte  $FE,$FD,$FB,$F7,$EF,$DF,$BF,$7F
+00073Er 1               ; .byte  $00,$7F,$7F,$7F,$7F,$7F,$7F,$7F
+00073Er 1               ; .byte  $00,$FE,$FE,$FE,$FE,$FE,$FE,$FE
+00073Er 1               ; .byte  $FF,$C3,$81,$81,$81,$81,$C3,$FF
+00073Er 1               ; .byte  $FF,$FF,$FF,$FF,$FF,$FF,$00,$FF
+00073Er 1               ; .byte  $C9,$80,$80,$80,$C1,$E3,$F7,$FF
+00073Er 1               ; .byte  $BF,$BF,$BF,$BF,$BF,$BF,$BF,$BF
+00073Er 1               ; .byte  $FF,$FF,$FF,$FF,$FC,$FB,$F7,$F7
+00073Er 1               ; .byte  $7E,$BD,$DB,$E7,$E7,$DB,$BD,$7E
+00073Er 1               ; .byte  $FF,$C3,$BD,$BD,$BD,$BD,$C3,$FF
+00073Er 1               ; .byte  $F7,$E3,$D5,$88,$D5,$F7,$F7,$FF
+00073Er 1               ; .byte  $FD,$FD,$FD,$FD,$FD,$FD,$FD,$FD
+00073Er 1               ; .byte  $F7,$E3,$C1,$80,$C1,$E3,$F7,$FF
+00073Er 1               ; .byte  $F7,$F7,$F7,$F7,$00,$F7,$F7,$F7
+00073Er 1               ; .byte  $5F,$AF,$5F,$AF,$5F,$AF,$5F,$AF
+00073Er 1               ; .byte  $F7,$F7,$F7,$F7,$F7,$F7,$F7,$F7
+00073Er 1               ; .byte  $FF,$FF,$FE,$C1,$AB,$EB,$EB,$FF
+00073Er 1               ; .byte  $00,$80,$C0,$E0,$F0,$F8,$FC,$FE
+00073Er 1               ; .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+00073Er 1               ; .byte  $0F,$0F,$0F,$0F,$0F,$0F,$0F,$0F
+00073Er 1               ; .byte  $FF,$FF,$FF,$FF,$00,$00,$00,$00
+00073Er 1               ; .byte  $00,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+00073Er 1               ; .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$00
+00073Er 1               ; .byte  $7F,$7F,$7F,$7F,$7F,$7F,$7F,$7F
+00073Er 1               ; .byte  $55,$AA,$55,$AA,$55,$AA,$55,$AA
+00073Er 1               ; .byte  $FE,$FE,$FE,$FE,$FE,$FE,$FE,$FE
+00073Er 1               ; .byte  $FF,$FF,$FF,$FF,$55,$AA,$55,$AA
+00073Er 1               ; .byte  $00,$01,$03,$07,$0F,$1F,$3F,$7F
+00073Er 1               ; .byte  $FC,$FC,$FC,$FC,$FC,$FC,$FC,$FC
+00073Er 1               ; .byte  $F7,$F7,$F7,$F7,$F0,$F7,$F7,$F7
+00073Er 1               ; .byte  $FF,$FF,$FF,$FF,$F0,$F0,$F0,$F0
+00073Er 1               ; .byte  $F7,$F7,$F7,$F7,$F0,$FF,$FF,$FF
+00073Er 1               ; .byte  $FF,$FF,$FF,$FF,$07,$F7,$F7,$F7
+00073Er 1               ; .byte  $FF,$FF,$FF,$FF,$FF,$FF,$00,$00
+00073Er 1               ; .byte  $FF,$FF,$FF,$FF,$F0,$F7,$F7,$F7
+00073Er 1               ; .byte  $F7,$F7,$F7,$F7,$00,$FF,$FF,$FF
+00073Er 1               ; .byte  $FF,$FF,$FF,$FF,$00,$F7,$F7,$F7
+00073Er 1               ; .byte  $F7,$F7,$F7,$F7,$07,$F7,$F7,$F7
+00073Er 1               ; .byte  $3F,$3F,$3F,$3F,$3F,$3F,$3F,$3F
+00073Er 1               ; .byte  $1F,$1F,$1F,$1F,$1F,$1F,$1F,$1F
+00073Er 1               ; .byte  $F8,$F8,$F8,$F8,$F8,$F8,$F8,$F8
+00073Er 1               ; .byte  $00,$00,$FF,$FF,$FF,$FF,$FF,$FF
+00073Er 1               ; .byte  $00,$00,$00,$FF,$FF,$FF,$FF,$FF
+00073Er 1               ; .byte  $FF,$FF,$FF,$FF,$FF,$00,$00,$00
+00073Er 1               ; .byte  $FE,$FE,$FE,$FE,$FE,$FE,$FE,$00
+00073Er 1               ; .byte  $FF,$FF,$FF,$FF,$0F,$0F,$0F,$0F
+00073Er 1               ; .byte  $F0,$F0,$F0,$F0,$FF,$FF,$FF,$FF
+00073Er 1               ; .byte  $F7,$F7,$F7,$F7,$07,$FF,$FF,$FF
+00073Er 1               ; .byte  $0F,$0F,$0F,$0F,$FF,$FF,$FF,$FF
+00073Er 1               ; .byte  $0F,$0F,$0F,$0F,$F0,$F0,$F0,$F0
+00073Er 1               
+00073Er 1               
+00073Er 1               screen_data1:
+00073Er 1               
+00073Er 1  20 20 20 20  .byte  $20,$20,$20,$20,$20,$20,$20,$20
+000742r 1  20 20 20 20  
+000746r 1  20 20 20 20  .byte  $20,$20,$20,$20,$20,$20,$20,$20
+00074Ar 1  20 20 20 20  
+00074Er 1  20 20 20 20  .byte  $20,$20,$20,$20,$20,$20,$20,$20
+000752r 1  20 20 20 20  
+000756r 1  20 20 20 20  .byte  $20,$20,$20,$20,$20,$20,$20,$20
+00075Ar 1  20 20 20 20  
+00075Er 1  1D 34 34 34  .byte  $1D,$34,$34,$34,$34,$34,$34,$34
+000762r 1  34 34 34 34  
+000766r 1  34 34 42 20  .byte  $34,$34,$42,$20,$20,$15,$23,$31
+00076Ar 1  20 15 23 31  
+00076Er 1  3F 4D 5B 69  .byte  $3F,$4D,$5B,$69,$20,$20,$1D,$34
+000772r 1  20 20 1D 34  
+000776r 1  34 34 00 0C  .byte  $34,$34,$00,$0C,$0B,$34,$34,$34
+00077Ar 1  0B 34 34 34  
+00077Er 1  42 20 20 16  .byte  $42,$20,$20,$16,$24,$32,$40,$4E
+000782r 1  24 32 40 4E  
+000786r 1  5C 6A 20 20  .byte  $5C,$6A,$20,$20,$1D,$34,$34,$34
+00078Ar 1  1D 34 34 34  
+00078Er 1  34 34 34 34  .byte  $34,$34,$34,$34,$34,$34,$42,$20
+000792r 1  34 34 42 20  
+000796r 1  20 17 25 33  .byte  $20,$17,$25,$33,$41,$4F,$5D,$6B
+00079Ar 1  41 4F 5D 6B  
+00079Er 1  20 20 1D 34  .byte  $20,$20,$1D,$34,$10,$12,$0B,$0B
+0007A2r 1  10 12 0B 0B  
+0007A6r 1  0F 13 0A 34  .byte  $0F,$13,$0A,$34,$42,$20,$20,$18
+0007AAr 1  42 20 20 18  
+0007AEr 1  22 34 42 50  .byte  $22,$34,$42,$50,$5E,$6C,$14,$20
+0007B2r 1  5E 6C 14 20  
+0007B6r 1  1D 34 34 34  .byte  $1D,$34,$34,$34,$34,$34,$34,$34
+0007BAr 1  34 34 34 34  
+0007BEr 1  34 34 42 20  .byte  $34,$34,$42,$20,$20,$19,$27,$34
+0007C2r 1  20 19 27 34  
+0007C6r 1  42 51 5F 6D  .byte  $42,$51,$5F,$6D,$2E,$20,$1D,$01
+0007CAr 1  2E 20 1D 01  
+0007CEr 1  02 02 0D 0A  .byte  $02,$02,$0D,$0A,$0D,$0B,$03,$0A
+0007D2r 1  0D 0B 03 0A  
+0007D6r 1  42 20 20 1A  .byte  $42,$20,$20,$1A,$28,$34,$42,$52
+0007DAr 1  28 34 42 52  
+0007DEr 1  60 6E 20 20  .byte  $60,$6E,$20,$20,$1D,$34,$34,$34
+0007E2r 1  1D 34 34 34  
+0007E6r 1  34 34 34 34  .byte  $34,$34,$34,$34,$34,$34,$42,$20
+0007EAr 1  34 34 42 20  
+0007EEr 1  20 1B 29 37  .byte  $20,$1B,$29,$37,$45,$53,$61,$6F
+0007F2r 1  45 53 61 6F  
+0007F6r 1  20 20 20 20  .byte  $20,$20,$20,$20,$20,$20,$20,$20
+0007FAr 1  20 20 20 20  
+0007FEr 1  20 20 20 20  .byte  $20,$20,$20,$20,$20,$20,$20,$1C
+000802r 1  20 20 20 1C  
+000806r 1  2A 38 46 54  .byte  $2A,$38,$46,$54,$62,$70,$20,$20
+00080Ar 1  62 70 20 20  
+00080Er 1  20 20 20 39  .byte  $20,$20,$20,$39,$05,$06,$05,$11
+000812r 1  05 06 05 11  
+000816r 1  07 20 20 20  .byte  $07,$20,$20,$20,$20,$1C,$2B,$34
+00081Ar 1  20 1C 2B 34  
+00081Er 1  47 55 63 20  .byte  $47,$55,$63,$20,$20,$20,$20,$20
+000822r 1  20 20 20 20  
+000826r 1  20 3A 3A 3A  .byte  $20,$3A,$3A,$3A,$3A,$3A,$3A,$20
+00082Ar 1  3A 3A 3A 20  
+00082Er 1  20 20 20 1E  .byte  $20,$20,$20,$1E,$2C,$34,$48,$56
+000832r 1  2C 34 48 56  
+000836r 1  20 20 20 20  .byte  $20,$20,$20,$20,$20,$20,$20,$20
+00083Ar 1  20 20 20 20  
+00083Er 1  20 20 20 20  .byte  $20,$20,$20,$20,$20,$20,$20,$20
+000842r 1  20 20 20 20  
+000846r 1  20 20 2D 3B  .byte  $20,$20,$2D,$3B,$49,$57,$20,$20
+00084Ar 1  49 57 20 20  
+00084Er 1  20 20 B1 20  .byte  $20,$20,$B1,$20,$08,$0E,$09,$07
+000852r 1  08 0E 09 07  
+000856r 1  20 26 20 20  .byte  $20,$26,$20,$20,$20,$20,$20,$20
+00085Ar 1  20 20 20 20  
+00085Er 1  20 20 20 20  .byte  $20,$20,$20,$20,$20,$20,$20,$20
+000862r 1  20 20 20 20  
+000866r 1  20 20 20 20  .byte  $20,$20,$20,$20,$20,$20,$20,$20
+00086Ar 1  20 20 20 20  
+00086Er 1  20 20 20 20  .byte  $20,$20,$20,$20,$20,$20,$20,$20
+000872r 1  20 20 20 20  
+000876r 1  20 20 20 20  .byte  $20,$20,$20,$20,$20,$20,$B2,$20
+00087Ar 1  20 20 B2 20  
+00087Er 1  08 0E 09 07  .byte  $08,$0E,$09,$07,$20,$2F,$20,$20
+000882r 1  20 2F 20 20  
+000886r 1  20 20 20 20  .byte  $20,$20,$20,$20,$20,$20,$20,$20
+00088Ar 1  20 20 20 20  
+00088Er 1  20 20 20 20  .byte  $20,$20,$20,$20,$20,$20,$20,$20
+000892r 1  20 20 20 20  
+000896r 1  20 20 20 20  .byte  $20,$20,$20,$20,$20,$20,$20,$20
+00089Ar 1  20 20 20 20  
+00089Er 1  20 20 20 20  .byte  $20,$20,$20,$20,$20,$20,$20,$20
+0008A2r 1  20 20 20 20  
+0008A6r 1  20 20 B3 20  .byte  $20,$20,$B3,$20,$08,$0E,$09,$07
+0008AAr 1  08 0E 09 07  
+0008AEr 1  04 20 30 36  .byte  $04,$20,$30,$36,$35,$20,$20,$20
+0008B2r 1  35 20 20 20  
+0008B6r 1  20 20 20 20  .byte  $20,$20,$20,$20,$20,$20,$20,$20
+0008BAr 1  20 20 20 20  
+0008BEr 1  20 20 20 20  .byte  $20,$20,$20,$20,$20,$20,$20,$20
+0008C2r 1  20 20 20 20  
+0008C6r 1  20 20 20 20  .byte  $20,$20,$20,$20,$20,$20,$20,$20
+0008CAr 1  20 20 20 20  
+0008CEr 1  20 20 20 20  .byte  $20,$20,$20,$20,$20,$20,$20,$20
+0008D2r 1  20 20 20 20  
+0008D6r 1  20 20 20 20  .byte  $20,$20,$20,$20,$20,$20,$20,$20
+0008DAr 1  20 20 20 20  
+0008DEr 1  20 20 20 20  .byte  $20,$20,$20,$20,$20,$20,$20,$20
+0008E2r 1  20 20 20 20  
+0008E6r 1  20 20 20 20  .byte  $20,$20,$20,$20,$20,$20,$20,$20
+0008EAr 1  20 20 20 20  
+0008EEr 1  20 20 20 20  .byte  $20,$20,$20,$20,$20,$20,$20,$20
+0008F2r 1  20 20 20 20  
+0008F6r 1  20 20 84 81  .byte  $20,$20,$84,$81,$96,$89,$84,$85
+0008FAr 1  96 89 84 85  
+0008FEr 1  20 82 95 83  .byte  $20,$82,$95,$83,$83,$89,$20,$20
+000902r 1  83 89 20 20  
+000906r 1  B2 B0 B2 B0  .byte  $B2,$B0,$B2,$B0,$20,$20,$20,$20
+00090Ar 1  20 20 20 20  
+00090Er 1  20 20 20 20  .byte  $20,$20,$20,$20,$20,$20,$20,$20
+000912r 1  20 20 20 20  
+000916r 1  20 20 20 20  .byte  $20,$20,$20,$20,$20,$20,$20,$20
+00091Ar 1  20 20 20 20  
+00091Er 1  20 20 20 20  .byte  $20,$20,$20,$20,$20,$20,$20,$20
+000922r 1  20 20 20 20  
+000926r 1  20 20 20 20  .byte  $20,$20,$20,$20,$20,$20,$20,$20
+00092Ar 1  20 20 20 20  
+00092Er 1  20 20 20 20  .byte  $20,$20,$20,$20,$20,$20,$20,$20
+000932r 1  20 20 20 20  
+000936r 1  20 20        .byte  $20,$20
+000938r 1               
+000938r 1               colour_data1:
+000938r 1               
+000938r 1  07 07 07 07  .byte  $07,$07,$07,$07,$07,$07,$07,$07
+00093Cr 1  07 07 07 07  
+000940r 1  07 07 07 07  .byte  $07,$07,$07,$07,$07,$07,$07,$07
+000944r 1  07 07 07 07  
+000948r 1  07 07 07 07  .byte  $07,$07,$07,$07,$07,$07,$07,$07
+00094Cr 1  07 07 07 07  
+000950r 1  07 07 07 07  .byte  $07,$07,$07,$07,$07,$07,$07,$07
+000954r 1  07 07 07 07  
+000958r 1  07 07 07 07  .byte  $07,$07,$07,$07,$07,$07,$07,$07
+00095Cr 1  07 07 07 07  
+000960r 1  07 07 07 07  .byte  $07,$07,$07,$07,$07,$07,$07,$07
+000964r 1  07 07 07 07  
+000968r 1  07 07 07 07  .byte  $07,$07,$07,$07,$07,$07,$07,$07
+00096Cr 1  07 07 07 07  
+000970r 1  07 07 07 07  .byte  $07,$07,$07,$07,$07,$07,$07,$07
+000974r 1  07 07 07 07  
+000978r 1  07 07 07 07  .byte  $07,$07,$07,$07,$07,$07,$07,$07
+00097Cr 1  07 07 07 07  
+000980r 1  07 07 07 07  .byte  $07,$07,$07,$07,$07,$07,$07,$07
+000984r 1  07 07 07 07  
+000988r 1  07 07 07 07  .byte  $07,$07,$07,$07,$07,$07,$07,$07
+00098Cr 1  07 07 07 07  
+000990r 1  07 07 07 07  .byte  $07,$07,$07,$07,$07,$07,$07,$07
+000994r 1  07 07 07 07  
+000998r 1  07 07 07 07  .byte  $07,$07,$07,$07,$07,$07,$07,$07
+00099Cr 1  07 07 07 07  
+0009A0r 1  07 07 07 07  .byte  $07,$07,$07,$07,$07,$07,$07,$07
+0009A4r 1  07 07 07 07  
+0009A8r 1  07 07 07 07  .byte  $07,$07,$07,$07,$0A,$0A,$0A,$07
+0009ACr 1  0A 0A 0A 07  
+0009B0r 1  07 07 07 07  .byte  $07,$07,$07,$07,$07,$07,$07,$07
+0009B4r 1  07 07 07 07  
+0009B8r 1  07 07 07 07  .byte  $07,$07,$07,$07,$07,$07,$07,$07
+0009BCr 1  07 07 07 07  
+0009C0r 1  07 07 0A 0A  .byte  $07,$07,$0A,$0A,$0A,$07,$07,$07
+0009C4r 1  0A 07 07 07  
+0009C8r 1  07 07 07 07  .byte  $07,$07,$07,$07,$07,$07,$07,$07
+0009CCr 1  07 07 07 07  
+0009D0r 1  07 07 07 07  .byte  $07,$07,$07,$07,$07,$07,$07,$07
+0009D4r 1  07 07 07 07  
+0009D8r 1  07 07 07 07  .byte  $07,$07,$07,$07,$07,$07,$07,$07
+0009DCr 1  07 07 07 07  
+0009E0r 1  07 07 07 07  .byte  $07,$07,$07,$07,$07,$07,$07,$07
+0009E4r 1  07 07 07 07  
+0009E8r 1  07 07 07 07  .byte  $07,$07,$07,$07,$07,$07,$07,$07
+0009ECr 1  07 07 07 07  
+0009F0r 1  07 07 07 07  .byte  $07,$07,$07,$07,$07,$07,$07,$07
+0009F4r 1  07 07 07 07  
+0009F8r 1  07 07 07 07  .byte  $07,$07,$07,$07,$07,$07,$07,$07
+0009FCr 1  07 07 07 07  
+000A00r 1  07 07 07 07  .byte  $07,$07,$07,$07,$07,$07,$07,$07
+000A04r 1  07 07 07 07  
+000A08r 1  07 07 07 07  .byte  $07,$07,$07,$07,$07,$07,$07,$07
+000A0Cr 1  07 07 07 07  
+000A10r 1  07 07 07 07  .byte  $07,$07,$07,$07,$07,$07,$07,$07
+000A14r 1  07 07 07 07  
+000A18r 1  07 07 07 07  .byte  $07,$07,$07,$07,$07,$07,$07,$07
+000A1Cr 1  07 07 07 07  
+000A20r 1  07 07 07 07  .byte  $07,$07,$07,$07,$07,$07,$07,$07
+000A24r 1  07 07 07 07  
+000A28r 1  07 07 07 07  .byte  $07,$07,$07,$07,$07,$07,$07,$07
+000A2Cr 1  07 07 07 07  
+000A30r 1  07 07 07 07  .byte  $07,$07,$07,$07,$07,$07,$07,$07
+000A34r 1  07 07 07 07  
+000A38r 1  07 07 07 07  .byte  $07,$07,$07,$07,$07,$07,$07,$07
+000A3Cr 1  07 07 07 07  
+000A40r 1  07 07 07 07  .byte  $07,$07,$07,$07,$07,$07,$07,$07
+000A44r 1  07 07 07 07  
+000A48r 1  07 07 07 07  .byte  $07,$07,$07,$07,$07,$07,$07,$07
+000A4Cr 1  07 07 07 07  
+000A50r 1  07 07 07 07  .byte  $07,$07,$07,$07,$07,$07,$07,$07
+000A54r 1  07 07 07 07  
+000A58r 1  07 07 07 07  .byte  $07,$07,$07,$07,$07,$07,$07,$07
+000A5Cr 1  07 07 07 07  
+000A60r 1  07 07 07 07  .byte  $07,$07,$07,$07,$07,$07,$07,$07
+000A64r 1  07 07 07 07  
+000A68r 1  07 07 07 07  .byte  $07,$07,$07,$07,$07,$07,$07,$07
+000A6Cr 1  07 07 07 07  
+000A70r 1  07 07 07 07  .byte  $07,$07,$07,$07,$07,$07,$07,$07
+000A74r 1  07 07 07 07  
+000A78r 1  07 07 07 07  .byte  $07,$07,$07,$07,$07,$07,$07,$07
+000A7Cr 1  07 07 07 07  
+000A80r 1  07 07 07 07  .byte  $07,$07,$07,$07,$07,$07,$07,$07
+000A84r 1  07 07 07 07  
+000A88r 1  07 07 07 07  .byte  $07,$07,$07,$07,$07,$07,$07,$07
+000A8Cr 1  07 07 07 07  
+000A90r 1  07 07 07 07  .byte  $07,$07,$07,$07,$07,$07,$07,$07
+000A94r 1  07 07 07 07  
+000A98r 1  07 07 07 07  .byte  $07,$07,$07,$07,$07,$07,$07,$07
+000A9Cr 1  07 07 07 07  
+000AA0r 1  07 07 07 07  .byte  $07,$07,$07,$07,$07,$07,$07,$07
+000AA4r 1  07 07 07 07  
+000AA8r 1  07 07 07 07  .byte  $07,$07,$07,$07,$07,$07,$07,$07
+000AACr 1  07 07 07 07  
+000AB0r 1  07 07 07 07  .byte  $07,$07,$07,$07,$07,$07,$07,$07
+000AB4r 1  07 07 07 07  
+000AB8r 1  07 07 07 07  .byte  $07,$07,$07,$07,$07,$07,$07,$07
+000ABCr 1  07 07 07 07  
+000AC0r 1  07 07 07 07  .byte  $07,$07,$07,$07,$07,$07,$07,$07
+000AC4r 1  07 07 07 07  
+000AC8r 1  07 07 07 07  .byte  $07,$07,$07,$07,$07,$07,$07,$07
+000ACCr 1  07 07 07 07  
+000AD0r 1  07 07 07 07  .byte  $07,$07,$07,$07,$07,$07,$07,$07
+000AD4r 1  07 07 07 07  
+000AD8r 1  07 07 07 07  .byte  $07,$07,$07,$07,$07,$07,$07,$07
+000ADCr 1  07 07 07 07  
+000AE0r 1  07 07 07 07  .byte  $07,$07,$07,$07,$07,$07,$07,$07
+000AE4r 1  07 07 07 07  
+000AE8r 1  07 07 07 07  .byte  $07,$07,$07,$07,$07,$07,$07,$07
+000AECr 1  07 07 07 07  
+000AF0r 1  07 07 01 01  .byte  $07,$07,$01,$01,$01,$01,$01,$01
+000AF4r 1  01 01 01 01  
+000AF8r 1  07 01 01 01  .byte  $07,$01,$01,$01,$01,$01,$07,$07
+000AFCr 1  01 01 07 07  
+000B00r 1  01 01 01 01  .byte  $01,$01,$01,$01,$07,$07,$07,$07
+000B04r 1  07 07 07 07  
+000B08r 1  07 07 07 07  .byte  $07,$07,$07,$07,$07,$07,$07,$07
+000B0Cr 1  07 07 07 07  
+000B10r 1  07 07 07 07  .byte  $07,$07,$07,$07,$07,$07,$07,$07
+000B14r 1  07 07 07 07  
+000B18r 1  07 07 07 07  .byte  $07,$07,$07,$07,$07,$07,$07,$07
+000B1Cr 1  07 07 07 07  
+000B20r 1  07 07 07 07  .byte  $07,$07,$07,$07,$07,$07,$07,$07
+000B24r 1  07 07 07 07  
+000B28r 1  07 07 07 07  .byte  $07,$07,$07,$07,$07,$07,$07,$07
+000B2Cr 1  07 07 07 07  
+000B30r 1  07 07        .byte  $07,$07
+000B32r 1               
+000B32r 1               
+000B32r 1               
+000B32r 1               char_data2:
+000B32r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+000B36r 1  FF FF FF FF  
+000B3Ar 1  FF FF FF FF  
+000B42r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+000B46r 1  FF FF FF FF  
+000B4Ar 1  FF FF FF FF  
+000B52r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+000B56r 1  FF FF FF FF  
+000B5Ar 1  FF FF FF FF  
+000B62r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+000B66r 1  FF FF FF FF  
+000B6Ar 1  FF FF FF FF  
+000B72r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+000B76r 1  FF FF FF FF  
+000B7Ar 1  FF FF FF FF  
+000B82r 1  FE FE FE FE  .byte  $FE,$FE,$FE,$FE,$FE,$FE,$FE,$FE,$FE,$FE,$FE,$FE,$FE,$FE,$FE,$FE
+000B86r 1  FE FE FE FE  
+000B8Ar 1  FE FE FE FE  
+000B92r 1  FD FD FD FD  .byte  $FD,$FD,$FD,$FD,$FD,$FD,$FD,$FD,$FD,$FD,$FD,$FD,$FD,$FD,$FD,$FE
+000B96r 1  FD FD FD FD  
+000B9Ar 1  FD FD FD FD  
+000BA2r 1  FE FE FE FE  .byte  $FE,$FE,$FE,$FE,$FE,$FE,$FE,$FE,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+000BA6r 1  FE FE FE FE  
+000BAAr 1  FF FF FF FF  
+000BB2r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+000BB6r 1  FF FF FF FF  
+000BBAr 1  FF FF FF FF  
+000BC2r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+000BC6r 1  FF FF FF FF  
+000BCAr 1  FF FF FF FF  
+000BD2r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+000BD6r 1  FF FF FF FF  
+000BDAr 1  FF FF FF FF  
+000BE2r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$33,$55,$53,$55,$33
+000BE6r 1  FF FF FF FF  
+000BEAr 1  FF FF FF 33  
+000BF2r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+000BF6r 1  FF FF FF FF  
+000BFAr 1  FF FF FF FF  
+000C02r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+000C06r 1  FF FF FF FF  
+000C0Ar 1  FF FF FF FF  
+000C12r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FE,$FE,$FE,$FF,$FD,$FD
+000C16r 1  FF FF FF FF  
+000C1Ar 1  FF FF FE FE  
+000C22r 1  F9 FB FB FB  .byte  $F9,$FB,$FB,$FB,$FB,$FB,$F7,$F7,$F7,$F7,$F7,$EF,$EF,$EF,$EE,$CE
+000C26r 1  FB FB F7 F7  
+000C2Ar 1  F7 F7 F7 EF  
+000C32r 1  DE DE DE DE  .byte  $DE,$DE,$DE,$DE,$DE,$9E,$BE,$BC,$BC,$BC,$BC,$BC,$B8,$78,$79,$79
+000C36r 1  DE 9E BE BC  
+000C3Ar 1  BC BC BC BC  
+000C42r 1  52 52 52 52  .byte  $52,$52,$52,$52,$52,$52,$52,$52,$52,$52,$52,$52,$52,$52,$52,$52
+000C46r 1  52 52 52 52  
+000C4Ar 1  52 52 52 52  
+000C52r 1  4A 4A 4A 4A  .byte  $4A,$4A,$4A,$4A,$4A,$4A,$4A,$4A,$4A,$4A,$4A,$4A,$4A,$4A,$52,$52
+000C56r 1  4A 4A 4A 4A  
+000C5Ar 1  4A 4A 4A 4A  
+000C62r 1  52 52 52 52  .byte  $52,$52,$52,$52,$52,$52,$52,$12,$12,$12,$12,$12,$14,$14,$14,$14
+000C66r 1  52 52 52 12  
+000C6Ar 1  12 12 12 12  
+000C72r 1  BC BC BC BC  .byte  $BC,$BC,$BC,$BC,$BC,$9C,$DC,$DC,$DE,$DE,$DE,$CE,$EE,$EF,$EF,$EF
+000C76r 1  BC 9C DC DC  
+000C7Ar 1  DE DE DE CE  
+000C82r 1  E7 F7 F7 F7  .byte  $E7,$F7,$F7,$F7,$F3,$FB,$FB,$FB,$F9,$F9,$FD,$FD,$FC,$FC,$FE,$FE
+000C86r 1  F3 FB FB FB  
+000C8Ar 1  F9 F9 FD FD  
+000C92r 1  FE FE FF FF  .byte  $FE,$FE,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+000C96r 1  FF FF FF FF  
+000C9Ar 1  FF FF FF FF  
+000CA2r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$BB,$55,$D5,$B5,$1B
+000CA6r 1  FF FF FF FF  
+000CAAr 1  FF FF FF BB  
+000CB2r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+000CB6r 1  FF FF FF FF  
+000CBAr 1  FF FF FF FF  
+000CC2r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FE,$FE,$FE,$FD,$FD,$FF,$FB,$F3,$F7,$F7,$EF,$EF
+000CC6r 1  FE FE FE FD  
+000CCAr 1  FD FF FB F3  
+000CD2r 1  45 45 45 45  .byte  $45,$45,$45,$45,$15,$15,$14,$14,$14,$14,$56,$52,$52,$52,$52,$52
+000CD6r 1  15 15 14 14  
+000CDAr 1  14 14 56 52  
+000CE2r 1  4A 4A 4A 4A  .byte  $4A,$4A,$4A,$4A,$4A,$4A,$4A,$4A,$4A,$2A,$2A,$2A,$2A,$2A,$2A,$2A
+000CE6r 1  4A 4A 4A 4A  
+000CEAr 1  4A 2A 2A 2A  
+000CF2r 1  3F 7F 7F 7F  .byte  $3F,$7F,$7F,$7F,$7F,$7F,$7F,$7F,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+000CF6r 1  7F 7F 7F 7F  
+000CFAr 1  FF FF FF FF  
+000D02r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FE,$FE,$FF,$FF,$FF
+000D06r 1  FF FF FF FF  
+000D0Ar 1  FF FF FF FE  
+000D12r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+000D16r 1  FF FF FF FF  
+000D1Ar 1  FF FF FF FF  
+000D22r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+000D26r 1  FF FF FF FF  
+000D2Ar 1  FF FF FF FF  
+000D32r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$7F,$7F,$7F,$7F,$7F,$3F,$3F,$3F,$3F,$3F,$1F,$1F
+000D36r 1  7F 7F 7F 7F  
+000D3Ar 1  7F 3F 3F 3F  
+000D42r 1  2A 4A 4A 4A  .byte  $2A,$4A,$4A,$4A,$4A,$4A,$4A,$4A,$4A,$4A,$4A,$52,$52,$52,$52,$52
+000D46r 1  4A 4A 4A 4A  
+000D4Ar 1  4A 4A 4A 52  
+000D52r 1  71 78 78 78  .byte  $71,$78,$78,$78,$38,$3C,$9C,$9E,$DE,$CE,$CE,$EF,$E7,$E7,$F7,$F3
+000D56r 1  38 3C 9C 9E  
+000D5Ar 1  DE CE CE EF  
+000D62r 1  FB F9 F9 FC  .byte  $FB,$F9,$F9,$FC,$FC,$FE,$FE,$FF,$FF,$FE,$FF,$B7,$2B,$B3,$BB,$17
+000D66r 1  FC FE FE FF  
+000D6Ar 1  FF FE FF B7  
+000D72r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FE,$FC,$FD,$F9,$FB,$F7,$F7,$EF,$EF,$DF,$DF,$BF
+000D76r 1  FE FC FD F9  
+000D7Ar 1  FB F7 F7 EF  
+000D82r 1  15 15 14 54  .byte  $15,$15,$14,$54,$54,$54,$54,$54,$52,$52,$52,$4A,$4A,$4A,$4A,$2A
+000D86r 1  54 54 54 54  
+000D8Ar 1  52 52 52 4A  
+000D92r 1  9F 1F 3F 3F  .byte  $9F,$1F,$3F,$3F,$3F,$7F,$7F,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+000D96r 1  3F 7F 7F FF  
+000D9Ar 1  FF FF FF FF  
+000DA2r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+000DA6r 1  FF FF FF FF  
+000DAAr 1  FF FF FF FF  
+000DB2r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+000DB6r 1  FF FF FF FF  
+000DBAr 1  FF FF FF FF  
+000DC2r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$CF,$8B,$3B,$3B,$BB,$BB,$BB,$BA,$B8
+000DC6r 1  FF FF FF CF  
+000DCAr 1  8B 3B 3B BB  
+000DD2r 1  B9 BB BB BB  .byte  $B9,$BB,$BB,$BB,$BB,$BB,$BB,$BB,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+000DD6r 1  BB BB BB BB  
+000DDAr 1  FF FF FF FF  
+000DE2r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$F3,$E1,$DD,$DE,$BE,$BE,$BE,$3E,$3E,$3E,$3E
+000DE6r 1  FF F3 E1 DD  
+000DEAr 1  DE BE BE BE  
+000DF2r 1  9E 9C CC C4  .byte  $9E,$9C,$CC,$C4,$F1,$F0,$FE,$FE,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+000DF6r 1  F1 F0 FE FE  
+000DFAr 1  FF FF FF FF  
+000E02r 1  FF FC FD FD  .byte  $FF,$FC,$FD,$FD,$FD,$FD,$FD,$FD,$FD,$FC,$FC,$FC,$FD,$FD,$FD,$FD
+000E06r 1  FD FD FD FD  
+000E0Ar 1  FD FC FC FC  
+000E12r 1  A8 A8 A8 AA  .byte  $A8,$A8,$A8,$AA,$AA,$AA,$AA,$2A,$2A,$2A,$2A,$2A,$2A,$4A,$4A,$4A
+000E16r 1  AA AA AA 2A  
+000E1Ar 1  2A 2A 2A 2A  
+000E22r 1  4A 52 52 52  .byte  $4A,$52,$52,$52,$52,$16,$14,$14,$14,$05,$45,$45,$45,$45,$51,$51
+000E26r 1  52 16 14 14  
+000E2Ar 1  14 05 45 45  
+000E32r 1  DF BF BF 7F  .byte  $DF,$BF,$BF,$7F,$FE,$FC,$FC,$F9,$F1,$F1,$E1,$E1,$C1,$C1,$81,$91
+000E36r 1  FE FC FC F9  
+000E3Ar 1  F1 F1 E1 E1  
+000E42r 1  11 09 19 19  .byte  $11,$09,$19,$19,$19,$19,$11,$11,$12,$16,$14,$05,$91,$84,$81,$84
+000E46r 1  19 19 11 11  
+000E4Ar 1  12 16 14 05  
+000E52r 1  E0 E0 F8 FE  .byte  $E0,$E0,$F8,$FE,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+000E56r 1  FF FF FF FF  
+000E5Ar 1  FF FF FF FF  
+000E62r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+000E66r 1  FF FF FF FF  
+000E6Ar 1  FF FF FF FF  
+000E72r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+000E76r 1  FF FF FF FF  
+000E7Ar 1  FF FF FF FF  
+000E82r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$D8,$DB,$DB,$DB,$DB,$DB,$9B,$18,$59
+000E86r 1  FF FF FF D8  
+000E8Ar 1  DB DB DB DB  
+000E92r 1  DB DB DB DB  .byte  $DB,$DB,$DB,$DB,$DB,$DB,$DB,$D8,$D8,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+000E96r 1  DB DB DB D8  
+000E9Ar 1  D8 FF FF FF  
+000EA2r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$DD,$DD,$DC,$DE,$DE,$DE,$DE,$DF,$DF,$DF,$DF
+000EA6r 1  FF DD DD DC  
+000EAAr 1  DE DE DE DE  
+000EB2r 1  CF EF EF E6  .byte  $CF,$EF,$EF,$E6,$E4,$F0,$F9,$7F,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+000EB6r 1  E4 F0 F9 7F  
+000EBAr 1  FF FF FF FF  
+000EC2r 1  FF 1E FE FD  .byte  $FF,$1E,$FE,$FD,$FD,$FB,$FB,$FB,$FB,$FB,$7B,$3B,$FB,$FB,$FB,$FB
+000EC6r 1  FD FB FB FB  
+000ECAr 1  FB FB 7B 3B  
+000ED2r 1  F8 FC FC FE  .byte  $F8,$FC,$FC,$FE,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+000ED6r 1  FF FF FF FF  
+000EDAr 1  FF FF FF FF  
+000EE2r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$7F,$7F,$7F,$3F,$1F,$0F,$87,$87,$C3
+000EE6r 1  FF FF FF 7F  
+000EEAr 1  7F 7F 3F 1F  
+000EF2r 1  48 01 25 04  .byte  $48,$01,$25,$04,$09,$0A,$49,$0A,$02,$42,$41,$50,$51,$40,$09,$08
+000EF6r 1  09 0A 49 0A  
+000EFAr 1  02 42 41 50  
+000F02r 1  0A 2A 2A 2A  .byte  $0A,$2A,$2A,$2A,$6A,$0A,$0A,$00,$41,$50,$15,$00,$81,$54,$01,$40
+000F06r 1  6A 0A 0A 00  
+000F0Ar 1  41 50 15 00  
+000F12r 1  41 01 0F 7F  .byte  $41,$01,$0F,$7F,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+000F16r 1  FF FF FF FF  
+000F1Ar 1  FF FF FF FF  
+000F22r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+000F26r 1  FF FF FF FF  
+000F2Ar 1  FF FF FF FF  
+000F32r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+000F36r 1  FF FF FF FF  
+000F3Ar 1  FF FF FF FF  
+000F42r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$7F,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+000F46r 1  FF FF FF 7F  
+000F4Ar 1  FF FF FF FF  
+000F52r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$7F,$3F,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+000F56r 1  FF FF FF 7F  
+000F5Ar 1  3F FF FF FF  
+000F62r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$E1,$EF,$EF,$EF,$EF,$EF,$E3,$67,$6F,$6F,$6F
+000F66r 1  FF E1 EF EF  
+000F6Ar 1  EF EF EF E3  
+000F72r 1  6F 6F 6F 6F  .byte  $6F,$6F,$6F,$6F,$EF,$E3,$E1,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+000F76r 1  EF E3 E1 FF  
+000F7Ar 1  FF FF FF FF  
+000F82r 1  FF FE 7C 7D  .byte  $FF,$FE,$7C,$7D,$BB,$BB,$BB,$DB,$DB,$DB,$DB,$DB,$DB,$DB,$DB,$BB
+000F86r 1  BB BB BB DB  
+000F8Ar 1  DB DB DB DB  
+000F92r 1  38 38 7C FD  .byte  $38,$38,$7C,$FD,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+000F96r 1  FF FF FF FF  
+000F9Ar 1  FF FF FF FF  
+000FA2r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+000FA6r 1  FF FF FF FF  
+000FAAr 1  FF FF FF FF  
+000FB2r 1  24 13 C8 27  .byte  $24,$13,$C8,$27,$10,$0C,$83,$60,$10,$8C,$63,$18,$06,$C1,$30,$08
+000FB6r 1  10 0C 83 60  
+000FBAr 1  10 8C 63 18  
+000FC2r 1  00 A0 A8 AA  .byte  $00,$A0,$A8,$AA,$A8,$A1,$80,$04,$10,$41,$04,$11,$40,$04,$10,$41
+000FC6r 1  A8 A1 80 04  
+000FCAr 1  10 41 04 11  
+000FD2r 1  46 82 AA AA  .byte  $46,$82,$AA,$AA,$AA,$AA,$AA,$AA,$AA,$AA,$AA,$AA,$AA,$A8,$A8,$A8
+000FD6r 1  AA AA AA AA  
+000FDAr 1  AA AA AA AA  
+000FE2r 1  A8 A8 A3 A3  .byte  $A8,$A8,$A3,$A3,$A3,$A3,$A3,$8F,$8F,$8F,$8F,$8F,$8F,$3F,$3F,$3F
+000FE6r 1  A3 A3 A3 8F  
+000FEAr 1  8F 8F 8F 8F  
+000FF2r 1  3F 3F 33 30  .byte  $3F,$3F,$33,$30,$30,$3F,$8C,$83,$A3,$A3,$A3,$A3,$A3,$A3,$A3,$A3
+000FF6r 1  30 3F 8C 83  
+000FFAr 1  A3 A3 A3 A3  
+001002r 1  A0 A3 A3 A0  .byte  $A0,$A3,$A3,$A0,$A8,$AA,$A8,$A8,$A8,$A8,$A8,$A8,$A8,$A8,$A8,$A8
+001006r 1  A8 AA A8 A8  
+00100Ar 1  A8 A8 A8 A8  
+001012r 1  FE FE FE FE  .byte  $FE,$FE,$FE,$FE,$FE,$FE,$FE,$FE,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+001016r 1  FE FE FE FE  
+00101Ar 1  FF FF FF FF  
+001022r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$C3,$DF,$DF,$DF,$DF,$DF,$C7,$CF,$DF,$DF,$DF
+001026r 1  FF C3 DF DF  
+00102Ar 1  DF DF DF C7  
+001032r 1  DF DF DF DF  .byte  $DF,$DF,$DF,$DF,$DF,$C7,$C3,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+001036r 1  DF C7 C3 FF  
+00103Ar 1  FF FF FF FF  
+001042r 1  FF F8 70 63  .byte  $FF,$F8,$70,$63,$63,$AB,$BB,$BB,$BB,$BB,$BB,$BB,$BB,$BB,$BB,$3B
+001046r 1  63 AB BB BB  
+00104Ar 1  BB BB BB BB  
+001052r 1  3B 3B 7B FF  .byte  $3B,$3B,$7B,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+001056r 1  FF FF FF FF  
+00105Ar 1  FF FF FF FF  
+001062r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+001066r 1  FF FF FF FF  
+00106Ar 1  FF FF FF FF  
+001072r 1  15 14 11 54  .byte  $15,$14,$11,$54,$01,$04,$51,$44,$10,$05,$12,$61,$94,$40,$10,$10
+001076r 1  01 04 51 44  
+00107Ar 1  10 05 12 61  
+001082r 1  40 10 40 03  .byte  $40,$10,$40,$03,$53,$13,$43,$0F,$4F,$0F,$4F,$3F,$3F,$3F,$3C,$30
+001086r 1  53 13 43 0F  
+00108Ar 1  4F 0F 4F 3F  
+001092r 1  30 00 07 0F  .byte  $30,$00,$07,$0F,$1F,$3F,$3F,$3F,$3C,$3C,$3C,$3C,$3C,$FC,$FC,$FC
+001096r 1  1F 3F 3F 3F  
+00109Ar 1  3C 3C 3C 3C  
+0010A2r 1  FC F0 F3 F0  .byte  $FC,$F0,$F3,$F0,$C0,$F0,$FC,$FC,$FC,$FC,$FF,$FF,$FF,$FF,$FF,$FF
+0010A6r 1  C0 F0 FC FC  
+0010AAr 1  FC FC FF FF  
+0010B2r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$3F,$3F,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+0010B6r 1  FF 3F 3F FF  
+0010BAr 1  FF FF FF FF  
+0010C2r 1  FF 3F 8F 0B  .byte  $FF,$3F,$8F,$0B,$8F,$BF,$3F,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+0010C6r 1  8F BF 3F FF  
+0010CAr 1  FF FF FF FF  
+0010D2r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$3F,$BF,$80,$A2,$AA,$AA,$AA
+0010D6r 1  FF FF FF FF  
+0010DAr 1  FF 3F BF 80  
+0010E2r 1  FF FF FF FC  .byte  $FF,$FF,$FF,$FC,$FE,$7A,$7A,$7B,$7B,$3B,$3B,$1B,$4B,$63,$73,$73
+0010E6r 1  FE 7A 7A 7B  
+0010EAr 1  7B 3B 3B 1B  
+0010F2r 1  7B 7B 7B 7B  .byte  $7B,$7B,$7B,$7B,$7B,$7B,$7B,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+0010F6r 1  7B 7B 7B FF  
+0010FAr 1  FF FF FF FF  
+001102r 1  FF F7 EB EF  .byte  $FF,$F7,$EB,$EF,$CF,$CF,$CF,$EF,$E7,$F7,$F3,$FB,$39,$39,$39,$39
+001106r 1  CF CF CF EF  
+00110Ar 1  E7 F7 F3 FB  
+001112r 1  03 83 C7 FF  .byte  $03,$83,$C7,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+001116r 1  FF FF FF FF  
+00111Ar 1  FF FF FF FF  
+001122r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+001126r 1  FF FF FF FF  
+00112Ar 1  FF FF FF FF  
+001132r 1  51 40 44 11  .byte  $51,$40,$44,$11,$44,$51,$04,$53,$03,$43,$0F,$0F,$0F,$3F,$3F,$3F
+001136r 1  44 51 04 53  
+00113Ar 1  03 43 0F 0F  
+001142r 1  7F 00 8A A0  .byte  $7F,$00,$8A,$A0,$EA,$CA,$F2,$FC,$FC,$FF,$FF,$FF,$FF,$FF,$FF,$3F
+001146r 1  EA CA F2 FC  
+00114Ar 1  FC FF FF FF  
+001152r 1  3F 0F 0F C7  .byte  $3F,$0F,$0F,$C7,$C3,$F7,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+001156r 1  C3 F7 FF FF  
+00115Ar 1  FF FF FF FF  
+001162r 1  FF FF CF 0F  .byte  $FF,$FF,$CF,$0F,$8F,$0F,$3F,$3F,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+001166r 1  8F 0F 3F 3F  
+00116Ar 1  FF FF FF FF  
+001172r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+001176r 1  FF FF FF FF  
+00117Ar 1  FF FF FF FF  
+001182r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+001186r 1  FF FF FF FF  
+00118Ar 1  FF FF FF FF  
+001192r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FC,$C2,$0A,$AA,$AA,$AA,$AA
+001196r 1  FF FF FF FF  
+00119Ar 1  FF FC C2 0A  
+0011A2r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$DF,$8F,$AF,$BF,$BF,$9F,$CF,$CF,$E7,$E7,$F7
+0011A6r 1  FF DF 8F AF  
+0011AAr 1  BF BF 9F CF  
+0011B2r 1  37 37 37 27  .byte  $37,$37,$37,$27,$07,$8F,$DF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+0011B6r 1  07 8F DF FF  
+0011BAr 1  FF FF FF FF  
+0011C2r 1  FF C7 87 9F  .byte  $FF,$C7,$87,$9F,$5F,$5F,$DF,$DF,$DF,$DF,$DF,$DF,$DF,$DF,$DF,$DF
+0011C6r 1  5F 5F DF DF  
+0011CAr 1  DF DF DF DF  
+0011D2r 1  DF DF DF FF  .byte  $DF,$DF,$DF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+0011D6r 1  FF FF FF FF  
+0011DAr 1  FF FF FF FF  
+0011E2r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FC
+0011E6r 1  FF FF FF FF  
+0011EAr 1  FF FF FF FF  
+0011F2r 1  32 47 9E 31  .byte  $32,$47,$9E,$31,$6F,$58,$DF,$33,$0E,$1C,$BB,$B7,$83,$8E,$9E,$90
+0011F6r 1  6F 58 DF 33  
+0011FAr 1  0E 1C BB B7  
+001202r 1  01 00 A8 A8  .byte  $01,$00,$A8,$A8,$28,$AA,$AA,$82,$28,$2A,$C8,$C2,$CA,$C2,$C0,$C0
+001206r 1  28 AA AA 82  
+00120Ar 1  28 2A C8 C2  
+001212r 1  C0 C0 C1 C1  .byte  $C0,$C0,$C1,$C1,$E0,$E0,$E1,$F1,$F0,$F8,$F8,$F8,$FC,$FC,$FE,$FF
+001216r 1  E0 E0 E1 F1  
+00121Ar 1  F0 F8 F8 F8  
+001222r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+001226r 1  FF FF FF FF  
+00122Ar 1  FF FF FF FF  
+001232r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+001236r 1  FF FF FF FF  
+00123Ar 1  FF FF FF FF  
+001242r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+001246r 1  FF FF FF FF  
+00124Ar 1  FF FF FF FF  
+001252r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$0F,$03,$A8,$A8,$A8,$A8,$A8,$AA,$AA
+001256r 1  FF FF FF 0F  
+00125Ar 1  03 A8 A8 A8  
+001262r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+001266r 1  FF FF FF FF  
+00126Ar 1  FF FF FF FF  
+001272r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+001276r 1  FF FF FF FF  
+00127Ar 1  FF FF FF FF  
+001282r 1  FF 0E 7E 7E  .byte  $FF,$0E,$7E,$7E,$7E,$7E,$7E,$7E,$1E,$3E,$7E,$7E,$7E,$7E,$7E,$7E
+001286r 1  7E 7E 7E 7E  
+00128Ar 1  1E 3E 7E 7E  
+001292r 1  7E 1E 0E FF  .byte  $7E,$1E,$0E,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+001296r 1  FF FF FF FF  
+00129Ar 1  FF FF FF FF  
+0012A2r 1  AA AA AA AA  .byte  $AA,$AA,$AA,$AA,$AA,$AA,$A8,$A8,$A8,$A1,$A3,$8D,$8B,$8D,$37,$1D
+0012A6r 1  AA AA A8 A8  
+0012AAr 1  A8 A1 A3 8D  
+0012B2r 1  2A 2A 2A 4A  .byte  $2A,$2A,$2A,$4A,$4A,$4A,$42,$12,$52,$04,$50,$44,$10,$44,$55,$11
+0012B6r 1  4A 4A 42 12  
+0012BAr 1  52 04 50 44  
+0012C2r 1  44 51 05 10  .byte  $44,$51,$05,$10,$85,$A0,$A9,$A8,$A8,$82,$2A,$A0,$8A,$A8,$00,$00
+0012C6r 1  85 A0 A9 A8  
+0012CAr 1  A8 82 2A A0  
+0012D2r 1  40 04 54 10  .byte  $40,$04,$54,$10,$52,$40,$20,$AA,$AA,$A8,$0A,$5A,$10,$15,$15,$00
+0012D6r 1  52 40 20 AA  
+0012DAr 1  AA A8 0A 5A  
+0012E2r 1  00 81 85 C0  .byte  $00,$81,$85,$C0,$E0,$F0,$F8,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+0012E6r 1  E0 F0 F8 FF  
+0012EAr 1  FF FF FF FF  
+0012F2r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+0012F6r 1  FF FF FF FF  
+0012FAr 1  FF FF FF FF  
+001302r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+001306r 1  FF FF FF FF  
+00130Ar 1  FF FF FF FF  
+001312r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$3F
+001316r 1  FF FF FF FF  
+00131Ar 1  FF FF FF FF  
+001322r 1  3F 3F 3F 3F  .byte  $3F,$3F,$3F,$3F,$3F,$3F,$3F,$3F,$BF,$8F,$8F,$8F,$8F,$8F,$A3,$A3
+001326r 1  3F 3F 3F 3F  
+00132Ar 1  BF 8F 8F 8F  
+001332r 1  F0 F8 FC FC  .byte  $F0,$F8,$FC,$FC,$FC,$FE,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+001336r 1  FC FE FF FF  
+00133Ar 1  FF FF FF FF  
+001342r 1  FF 3F DF DF  .byte  $FF,$3F,$DF,$DF,$CE,$EE,$EE,$EF,$EF,$EF,$DF,$DF,$39,$39,$F9,$F8
+001346r 1  CE EE EE EF  
+00134Ar 1  EF EF DF DF  
+001352r 1  F8 FC FE FF  .byte  $F8,$FC,$FE,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FE,$FC,$FC,$F8,$F8,$F8
+001356r 1  FF FF FF FF  
+00135Ar 1  FF FF FE FC  
+001362r 1  A3 A1 A3 8D  .byte  $A3,$A1,$A3,$8D,$87,$1D,$77,$DD,$77,$DD,$77,$DD,$77,$DD,$77,$DD
+001366r 1  87 1D 77 DD  
+00136Ar 1  77 DD 77 DD  
+001372r 1  15 54 11 85  .byte  $15,$54,$11,$85,$84,$81,$85,$A0,$A1,$A0,$A1,$A8,$28,$2A,$2A,$2A
+001376r 1  84 81 85 A0  
+00137Ar 1  A1 A0 A1 A8  
+001382r 1  2A 0A 0A 0A  .byte  $2A,$0A,$0A,$0A,$4A,$02,$12,$02,$44,$10,$01,$44,$10,$41,$04,$10
+001386r 1  4A 02 12 02  
+00138Ar 1  44 10 01 44  
+001392r 1  04 00 00 A0  .byte  $04,$00,$00,$A0,$A8,$8A,$00,$AA,$A0,$84,$84,$84,$90,$13,$4F,$0F
+001396r 1  A8 8A 00 AA  
+00139Ar 1  A0 84 84 84  
+0013A2r 1  0F CF CF FF  .byte  $0F,$CF,$CF,$FF,$3F,$3F,$CF,$C3,$C3,$C3,$CF,$3F,$3C,$3C,$FC,$FC
+0013A6r 1  3F 3F CF C3  
+0013AAr 1  C3 C3 CF 3F  
+0013B2r 1  F0 F3 FF FF  .byte  $F0,$F3,$FF,$FF,$FF,$FF,$FC,$3C,$3C,$3C,$C3,$FF,$FF,$FF,$FF,$FF
+0013B6r 1  FF FF FC 3C  
+0013BAr 1  3C 3C C3 FF  
+0013C2r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+0013C6r 1  FF FF FF FF  
+0013CAr 1  FF FF FF FF  
+0013D2r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FE,$FC,$FC,$FB,$F8,$FC,$FC,$FE,$FF,$FF,$FF
+0013D6r 1  FF FE FC FC  
+0013DAr 1  FB F8 FC FC  
+0013E2r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+0013E6r 1  FF FF FF FF  
+0013EAr 1  FF FF FF FF  
+0013F2r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$3F,$3F,$3F,$3F,$8F,$8F,$8F,$A3,$A3,$A3
+0013F6r 1  FF FF 3F 3F  
+0013FAr 1  3F 3F 8F 8F  
+001402r 1  FC BC 5E 7E  .byte  $FC,$BC,$5E,$7E,$7E,$7F,$7F,$3F,$3F,$9F,$DE,$CE,$CE,$CE,$CE,$1F
+001406r 1  7E 7F 7F 3F  
+00140Ar 1  3F 9F DE CE  
+001412r 1  23 21 23 A1  .byte  $23,$21,$23,$A1,$87,$8D,$87,$0D,$37,$1D,$77,$DD,$74,$DC,$74,$DC
+001416r 1  87 8D 87 0D  
+00141Ar 1  37 1D 77 DD  
+001422r 1  72 D2 72 D2  .byte  $72,$D2,$72,$D2,$72,$CA,$4A,$CA,$4A,$28,$22,$22,$22,$2A,$28,$22
+001426r 1  72 CA 4A CA  
+00142Ar 1  4A 28 22 22  
+001432r 1  F3 CD 99 32  .byte  $F3,$CD,$99,$32,$66,$CC,$DD,$99,$3A,$64,$6D,$ED,$4B,$12,$76,$6C
+001436r 1  66 CC DD 99  
+00143Ar 1  3A 64 6D ED  
+001442r 1  04 01 A5 21  .byte  $04,$01,$A5,$21,$88,$88,$8A,$2A,$2A,$2A,$28,$28,$28,$08,$40,$40
+001446r 1  88 88 8A 2A  
+00144Ar 1  2A 2A 28 28  
+001452r 1  40 58 50 24  .byte  $40,$58,$50,$24,$24,$16,$06,$06,$02,$02,$06,$C2,$F2,$F2,$FC,$CF
+001456r 1  24 16 06 06  
+00145Ar 1  02 02 06 C2  
+001462r 1  CC CC CC CC  .byte  $CC,$CC,$CC,$CC,$CC,$CC,$CC,$3C,$3C,$3C,$30,$F0,$F0,$F0,$F0,$F0
+001466r 1  CC CC CC 3C  
+00146Ar 1  3C 3C 30 F0  
+001472r 1  CD CD 3D 3D  .byte  $CD,$CD,$3D,$3D,$3C,$EC,$FC,$FC,$FC,$FC,$FC,$F8,$F0,$F0,$E2,$E1
+001476r 1  3C EC FC FC  
+00147Ar 1  FC FC FC F8  
+001482r 1  C0 D2 D0 91  .byte  $C0,$D2,$D0,$91,$81,$0D,$ED,$2D,$2E,$6E,$2E,$2E,$26,$06,$00,$90
+001486r 1  81 0D ED 2D  
+00148Ar 1  2E 6E 2E 2E  
+001492r 1  A0 C2 EF FF  .byte  $A0,$C2,$EF,$FF,$FF,$FF,$F0,$F8,$FC,$FE,$FE,$FC,$FC,$B3,$2B,$CF
+001496r 1  FF FF F0 F8  
+00149Ar 1  FC FE FE FC  
+0014A2r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+0014A6r 1  FF FF FF FF  
+0014AAr 1  FF FF FF FF  
+0014B2r 1  FC FC FC FC  .byte  $FC,$FC,$FC,$FC,$FC,$FC,$FC,$FC,$FC,$FC,$F2,$F2,$F2,$F2,$F2,$F2
+0014B6r 1  FC FC FC FC  
+0014BAr 1  FC FC F2 F2  
+0014C2r 1  F2 F2 F2 F2  .byte  $F2,$F2,$F2,$F2,$32,$32,$32,$32,$32,$F2,$F2,$F2,$F2,$F2,$32,$02
+0014C6r 1  32 32 32 32  
+0014CAr 1  32 F2 F2 F2  
+0014D2r 1  CA 4A CA 2A  .byte  $CA,$4A,$CA,$2A,$2A,$2A,$2A,$2A,$2A,$2A,$28,$28,$AA,$A8,$A8,$A8
+0014D6r 1  2A 2A 2A 2A  
+0014DAr 1  2A 2A 28 28  
+0014E2r 1  FC FD FD FD  .byte  $FC,$FD,$FD,$FD,$F9,$FB,$FB,$FB,$FB,$FB,$F3,$F3,$F7,$F7,$F7,$EF
+0014E6r 1  F9 FB FB FB  
+0014EAr 1  FB FB F3 F3  
+0014F2r 1  40 11 49 48  .byte  $40,$11,$49,$48,$08,$48,$08,$2A,$2A,$22,$28,$22,$0A,$22,$2A,$08
+0014F6r 1  08 48 08 2A  
+0014FAr 1  2A 22 28 22  
+001502r 1  76 77 77 7E  .byte  $76,$77,$77,$7E,$7F,$76,$76,$36,$76,$8E,$0E,$28,$00,$00,$80,$E0
+001506r 1  7F 76 76 36  
+00150Ar 1  76 8E 0E 28  
+001512r 1  80 A0 A2 AA  .byte  $80,$A0,$A2,$AA,$AA,$AA,$28,$28,$28,$28,$21,$25,$00,$40,$54,$00
+001516r 1  AA AA 28 28  
+00151Ar 1  28 28 21 25  
+001522r 1  15 15 55 51  .byte  $15,$15,$55,$51,$49,$69,$69,$69,$69,$68,$69,$49,$51,$15,$15,$54
+001526r 1  49 69 69 69  
+00152Ar 1  69 68 69 49  
+001532r 1  40 01 14 52  .byte  $40,$01,$14,$52,$12,$12,$12,$10,$07,$05,$C0,$C0,$00,$71,$75,$3C
+001536r 1  12 12 12 10  
+00153Ar 1  07 05 C0 C0  
+001542r 1  3C BE FE DE  .byte  $3C,$BE,$FE,$DE,$DE,$DE,$CE,$CE,$CC,$CC,$8C,$0C,$4C,$4C,$08,$48
+001546r 1  DE DE CE CE  
+00154Ar 1  CC CC 8C 0C  
+001552r 1  32 32 32 32  .byte  $32,$32,$32,$32,$32,$32,$32,$F2,$F2,$F2,$E2,$CA,$CA,$CA,$CA,$CA
+001556r 1  32 32 32 F2  
+00155Ar 1  F2 F2 E2 CA  
+001562r 1  CA CA CA CA  .byte  $CA,$CA,$CA,$CA,$CA,$2A,$2A,$2A,$2A,$2A,$2A,$2A,$2A,$2A,$2A,$2A
+001566r 1  CA 2A 2A 2A  
+00156Ar 1  2A 2A 2A 2A  
+001572r 1  3D BD F9 FB  .byte  $3D,$BD,$F9,$FB,$FB,$FB,$FB,$FB,$FB,$FB,$FB,$FB,$F7,$F7,$F7,$F7
+001576r 1  FB FB FB FB  
+00157Ar 1  FB FB FB FB  
+001582r 1  F7 F7 E7 E7  .byte  $F7,$F7,$E7,$E7,$6F,$6F,$6F,$6F,$6F,$2F,$2F,$8F,$9F,$9F,$9E,$DE
+001586r 1  6F 6F 6F 6F  
+00158Ar 1  6F 2F 2F 8F  
+001592r 1  28 28 28 28  .byte  $28,$28,$28,$28,$28,$28,$28,$A8,$A8,$A8,$A8,$A2,$A2,$A2,$A2,$A2
+001596r 1  28 28 28 A8  
+00159Ar 1  A8 A8 A8 A2  
+0015A2r 1  FB F3 F3 F3  .byte  $FB,$F3,$F3,$F3,$F3,$F3,$F3,$F7,$F7,$F7,$F7,$FF,$FF,$FF,$E7,$E7
+0015A6r 1  F3 F3 F3 F7  
+0015AAr 1  F7 F7 F7 FF  
+0015B2r 1  FD F7 E8 8A  .byte  $FD,$F7,$E8,$8A,$96,$B4,$B4,$B4,$2D,$2B,$4A,$52,$52,$14,$35,$04
+0015B6r 1  96 B4 B4 B4  
+0015BAr 1  2D 2B 4A 52  
+0015C2r 1  21 21 20 20  .byte  $21,$21,$20,$20,$21,$25,$25,$20,$A8,$A8,$A8,$A9,$89,$89,$09,$69
+0015C6r 1  21 25 25 20  
+0015CAr 1  A8 A8 A8 A9  
+0015D2r 1  28 A8 88 A8  .byte  $28,$A8,$88,$A8,$88,$A8,$88,$A8,$8A,$AA,$8A,$AA,$AA,$8A,$A8,$8A
+0015D6r 1  88 A8 88 A8  
+0015DAr 1  8A AA 8A AA  
+0015E2r 1  A2 A2 A2 AA  .byte  $A2,$A2,$A2,$AA,$AA,$AA,$AA,$8A,$8A,$08,$88,$21,$21,$A4,$84,$21
+0015E6r 1  AA AA AA 8A  
+0015EAr 1  8A 08 88 21  
+0015F2r 1  40 50 10 14  .byte  $40,$50,$10,$14,$90,$10,$18,$48,$01,$02,$A2,$08,$2A,$2A,$22,$22
+0015F6r 1  90 10 18 48  
+0015FAr 1  01 02 A2 08  
+001602r 1  00 73 73 72  .byte  $00,$73,$73,$72,$F2,$F2,$E0,$E0,$E4,$F4,$F5,$F5,$F5,$F4,$F4,$F5
+001606r 1  F2 F2 E0 E0  
+00160Ar 1  E4 F4 F5 F5  
+001612r 1  F5 F5 F5 F5  .byte  $F5,$F5,$F5,$F5,$F5,$F9,$F9,$F9,$F9,$F9,$79,$79,$71,$71,$71,$31
+001616r 1  F5 F9 F9 F9  
+00161Ar 1  F9 F9 79 79  
+001622r 1  31 7C 3C 3C  .byte  $31,$7C,$3C,$3C,$3E,$3E,$3E,$2A,$2A,$2A,$2A,$2A,$2A,$32,$3E,$36
+001626r 1  3E 3E 3E 2A  
+00162Ar 1  2A 2A 2A 2A  
+001632r 1  20 22 34 38  .byte  $20,$22,$34,$38,$38,$72,$72,$30,$30,$38,$38,$38,$30,$38,$30,$30
+001636r 1  38 72 72 30  
+00163Ar 1  30 38 38 38  
+001642r 1  70 70 30 30  .byte  $70,$70,$30,$30,$30,$30,$30,$30,$32,$32,$30,$30,$10,$30,$30,$30
+001646r 1  30 30 30 30  
+00164Ar 1  32 32 30 30  
+001652r 1  70 70 30 30  .byte  $70,$70,$30,$30,$30,$30,$30,$30,$32,$32,$30,$30,$10,$30,$30,$30
+001656r 1  30 30 30 30  
+00165Ar 1  32 32 30 30  
+001662r 1  CC CC DC CC  .byte  $CC,$CC,$DC,$CC,$EC,$EE,$CE,$DF,$DE,$DE,$DE,$DE,$DF,$DF,$FE,$DE
+001666r 1  EC EE CE DF  
+00166Ar 1  DE DE DE DE  
+001672r 1  FD FD FE 7F  .byte  $FD,$FD,$FE,$7F,$3F,$3F,$BF,$BF,$1F,$4F,$C7,$E7,$A8,$A8,$39,$5A
+001676r 1  3F 3F BF BF  
+00167Ar 1  1F 4F C7 E7  
+001682r 1  59 9A 98 71  .byte  $59,$9A,$98,$71,$EF,$D2,$B2,$62,$66,$05,$0F,$02,$12,$16,$54,$80
+001686r 1  EF D2 B2 62  
+00168Ar 1  66 05 0F 02  
+001692r 1  10 04 01 10  .byte  $10,$04,$01,$10,$40,$04,$40,$10,$01,$04,$10,$02,$AA,$AA,$AA,$A8
+001696r 1  40 04 40 10  
+00169Ar 1  01 04 10 02  
+0016A2r 1  A2 A2 8A 2A  .byte  $A2,$A2,$8A,$2A,$AA,$AA,$A8,$A1,$06,$AA,$AA,$2A,$08,$00,$14,$00
+0016A6r 1  AA AA A8 A1  
+0016AAr 1  06 AA AA 2A  
+0016B2r 1  00 80 80 00  .byte  $00,$80,$80,$00,$00,$00,$E0,$74,$00,$70,$30,$20,$40,$00,$81,$17
+0016B6r 1  00 00 E0 74  
+0016BAr 1  00 70 30 20  
+0016C2r 1  07 1F 1F 1F  .byte  $07,$1F,$1F,$1F,$1F,$1F,$0F,$0F,$0F,$0F,$17,$17,$03,$83,$40,$00
+0016C6r 1  1F 1F 0F 0F  
+0016CAr 1  0F 0F 17 17  
+0016D2r 1  B0 C0 E4 F2  .byte  $B0,$C0,$E4,$F2,$F8,$FC,$FE,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+0016D6r 1  F8 FC FE FF  
+0016DAr 1  FF FF FF FF  
+0016E2r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FC,$FC,$FC,$FC,$FE,$F2,$F2,$F2
+0016E6r 1  FF FF FF FF  
+0016EAr 1  FC FC FC FC  
+0016F2r 1  C0 C8 C8 C8  .byte  $C0,$C8,$C8,$C8,$C8,$28,$28,$2A,$AA,$AA,$AA,$2A,$0A,$42,$52,$10
+0016F6r 1  C8 28 28 2A  
+0016FAr 1  AA AA AA 2A  
+001702r 1  04 80 A1 A8  .byte  $04,$80,$A1,$A8,$AA,$AA,$0A,$12,$52,$52,$42,$0A,$88,$A8,$A8,$AC
+001706r 1  AA AA 0A 12  
+00170Ar 1  52 52 42 0A  
+001712r 1  08 40 54 14  .byte  $08,$40,$54,$14,$84,$80,$A0,$A0,$A0,$A0,$A0,$A0,$80,$80,$80,$00
+001716r 1  84 80 A0 A0  
+00171Ar 1  A0 A0 A0 A0  
+001722r 1  02 0A 0A 0A  .byte  $02,$0A,$0A,$0A,$0A,$2A,$2A,$2A,$AA,$AA,$AA,$AA,$AA,$AA,$AA,$AA
+001726r 1  0A 2A 2A 2A  
+00172Ar 1  AA AA AA AA  
+001732r 1  FF FF FF 7F  .byte  $FF,$FF,$FF,$7F,$3F,$BF,$DF,$CF,$E7,$F7,$FB,$FB,$FD,$FC,$FE,$BE
+001736r 1  3F BF DF CF  
+00173Ar 1  E7 F7 FB FB  
+001742r 1  3F 3F 3F AF  .byte  $3F,$3F,$3F,$AF,$A7,$17,$13,$23,$61,$C5,$24,$86,$8E,$30,$63,$C1
+001746r 1  A7 17 13 23  
+00174Ar 1  61 C5 24 86  
+001752r 1  05 01 04 11  .byte  $05,$01,$04,$11,$40,$01,$04,$50,$05,$51,$01,$A1,$A2,$20,$A8,$82
+001756r 1  40 01 04 50  
+00175Ar 1  05 51 01 A1  
+001762r 1  A2 84 89 98  .byte  $A2,$84,$89,$98,$28,$62,$A0,$A0,$84,$80,$00,$04,$98,$80,$00,$00
+001766r 1  28 62 A0 A0  
+00176Ar 1  84 80 00 04  
+001772r 1  08 19 31 23  .byte  $08,$19,$31,$23,$E3,$07,$00,$80,$00,$1E,$20,$64,$48,$48,$08,$00
+001776r 1  E3 07 00 80  
+00177Ar 1  00 1E 20 64  
+001782r 1  00 46 04 00  .byte  $00,$46,$04,$00,$00,$80,$82,$C7,$F3,$F3,$F5,$F2,$FA,$F8,$F0,$41
+001786r 1  00 80 82 C7  
+00178Ar 1  F3 F3 F5 F2  
+001792r 1  1B 07 07 43  .byte  $1B,$07,$07,$43,$00,$10,$44,$40,$41,$D0,$D0,$F8,$F0,$F0,$F0,$F2
+001796r 1  00 10 44 40  
+00179Ar 1  41 D0 D0 F8  
+0017A2r 1  C0 CA CA 2A  .byte  $C0,$CA,$CA,$2A,$28,$28,$28,$29,$0A,$0A,$42,$82,$90,$A4,$A9,$0A
+0017A6r 1  28 28 28 29  
+0017AAr 1  0A 0A 42 82  
+0017B2r 1  12 50 50 52  .byte  $12,$50,$50,$52,$52,$48,$08,$18,$68,$A8,$A8,$A0,$A0,$A0,$A0,$00
+0017B6r 1  52 48 08 18  
+0017BAr 1  68 A8 A8 A0  
+0017C2r 1  12 12 0A 4A  .byte  $12,$12,$0A,$4A,$4A,$4A,$4A,$4A,$4A,$2A,$2A,$2A,$2A,$AA,$AA,$AA
+0017C6r 1  4A 4A 4A 4A  
+0017CAr 1  4A 2A 2A 2A  
+0017D2r 1  AA AA AA AA  .byte  $AA,$AA,$AA,$AA,$AA,$AA,$AA,$AA,$AA,$AA,$AA,$AA,$AA,$AA,$AA,$AA
+0017D6r 1  AA AA AA AA  
+0017DAr 1  AA AA AA AA  
+0017E2r 1  AA A8 A8 A0  .byte  $AA,$A8,$A8,$A0,$A1,$A1,$A1,$81,$85,$85,$85,$85,$95,$94,$14,$14
+0017E6r 1  A1 A1 A1 81  
+0017EAr 1  85 85 85 85  
+0017F2r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+0017F6r 1  FF FF FF FF  
+0017FAr 1  FF FF FF FF  
+001802r 1  7F 3F BF 9F  .byte  $7F,$3F,$BF,$9F,$DF,$CF,$EF,$F7,$F7,$F3,$FB,$FB,$7D,$7C,$7E,$3E
+001806r 1  DF CF EF F7  
+00180Ar 1  F7 F3 FB FB  
+001812r 1  3E 3E 1F DF  .byte  $3E,$3E,$1F,$DF,$CF,$CF,$8F,$67,$E7,$67,$07,$13,$33,$03,$01,$01
+001816r 1  CF CF 8F 67  
+00181Ar 1  E7 67 07 13  
+001822r 1  21 28 28 28  .byte  $21,$28,$28,$28,$28,$2A,$2A,$2A,$2A,$AA,$AA,$AA,$AA,$AA,$AA,$AA
+001826r 1  28 2A 2A 2A  
+00182Ar 1  2A AA AA AA  
+001832r 1  7F 3F 3F BF  .byte  $7F,$3F,$3F,$BF,$BF,$9F,$1F,$1F,$0F,$07,$03,$01,$00,$00,$04,$00
+001836r 1  BF 9F 1F 1F  
+00183Ar 1  0F 07 03 01  
+001842r 1  40 70 78 FC  .byte  $40,$70,$78,$FC,$FE,$7E,$7E,$7E,$7E,$7E,$7E,$7E,$3E,$3E,$1E,$9C
+001846r 1  FE 7E 7E 7E  
+00184Ar 1  7E 7E 7E 7E  
+001852r 1  CC C8 C8 C0  .byte  $CC,$C8,$C8,$C0,$08,$00,$22,$22,$86,$00,$04,$26,$00,$00,$02,$52
+001856r 1  08 00 22 22  
+00185Ar 1  86 00 04 26  
+001862r 1  A5 A8 2A 4A  .byte  $A5,$A8,$2A,$4A,$4A,$4A,$48,$28,$A8,$A8,$81,$20,$04,$04,$00,$00
+001866r 1  4A 4A 48 28  
+00186Ar 1  A8 A8 81 20  
+001872r 1  4A 0A 0A 2A  .byte  $4A,$0A,$0A,$2A,$2A,$2A,$2A,$2A,$2A,$2A,$AA,$AA,$AA,$AA,$AA,$AA
+001876r 1  2A 2A 2A 2A  
+00187Ar 1  2A 2A AA AA  
+001882r 1  AA AA AA AA  .byte  $AA,$AA,$AA,$AA,$AA,$AA,$AA,$AA,$AA,$AA,$A8,$A8,$A8,$A8,$A9,$A9
+001886r 1  AA AA AA AA  
+00188Ar 1  AA AA A8 A8  
+001892r 1  A1 A1 A1 A1  .byte  $A1,$A1,$A1,$A1,$85,$85,$85,$85,$15,$15,$14,$14,$14,$54,$54,$51
+001896r 1  85 85 85 85  
+00189Ar 1  15 15 14 14  
+0018A2r 1  FB FB F7 F7  .byte  $FB,$FB,$F7,$F7,$F7,$E9,$EA,$DA,$DA,$D9,$BF,$BD,$7C,$FD,$FD,$FD
+0018A6r 1  F7 E9 EA DA  
+0018AAr 1  DA D9 BF BD  
+0018B2r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+0018B6r 1  FF FF FF FF  
+0018BAr 1  FF FF FF FF  
+0018C2r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+0018C6r 1  FF FF FF FF  
+0018CAr 1  FF FF FF FF  
+0018D2r 1  7F 7F 7F 3F  .byte  $7F,$7F,$7F,$3F,$3F,$3F,$BF,$BF,$9F,$DF,$CF,$EF,$EF,$EF,$E7,$F7
+0018D6r 1  3F 3F BF BF  
+0018DAr 1  9F DF CF EF  
+0018E2r 1  51 51 51 51  .byte  $51,$51,$51,$51,$51,$14,$14,$14,$14,$14,$14,$14,$84,$84,$84,$84
+0018E6r 1  51 14 14 14  
+0018EAr 1  14 14 14 14  
+0018F2r 1  85 85 85 85  .byte  $85,$85,$85,$85,$85,$85,$85,$85,$A5,$A1,$A1,$A1,$A1,$A1,$A1,$A1
+0018F6r 1  85 85 85 85  
+0018FAr 1  A5 A1 A1 A1  
+001902r 1  21 21 21 01  .byte  $21,$21,$21,$01,$48,$48,$48,$48,$28,$28,$28,$28,$28,$08,$08,$08
+001906r 1  48 48 48 48  
+00190Ar 1  28 28 28 28  
+001912r 1  00 04 12 8A  .byte  $00,$04,$12,$8A,$8A,$00,$08,$28,$28,$60,$20,$60,$60,$20,$A0,$80
+001916r 1  8A 00 08 28  
+00191Ar 1  28 60 20 60  
+001922r 1  48 88 48 88  .byte  $48,$88,$48,$88,$28,$28,$28,$A8,$A8,$A1,$A1,$A1,$A1,$A1,$A1,$A1
+001926r 1  28 28 28 A8  
+00192Ar 1  A8 A1 A1 A1  
+001932r 1  A1 A1 A1 A1  .byte  $A1,$A1,$A1,$A1,$A1,$A1,$A1,$A1,$A1,$A5,$A5,$85,$85,$84,$84,$84
+001936r 1  A1 A1 A1 A1  
+00193Ar 1  A1 A5 A5 85  
+001942r 1  3D 3D 3D 3D  .byte  $3D,$3D,$3D,$3D,$3D,$79,$7B,$7B,$FB,$FB,$F7,$F7,$E7,$EF,$EF,$EF
+001946r 1  3D 79 7B 7B  
+00194Ar 1  FB FB F7 F7  
+001952r 1  DF DF DF BF  .byte  $DF,$DF,$DF,$BF,$BF,$BF,$FF,$7F,$7F,$7F,$FF,$FF,$FF,$FF,$FF,$FF
+001956r 1  BF BF FF 7F  
+00195Ar 1  7F 7F FF FF  
+001962r 1  FF FF FF 7F  .byte  $FF,$FF,$FF,$7F,$7F,$D2,$A4,$82,$A6,$A6,$FF,$55,$53,$53,$53,$6D
+001966r 1  7F D2 A4 82  
+00196Ar 1  A6 A6 FF 55  
+001972r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+001976r 1  FF FF FF FF  
+00197Ar 1  FF FF FF FF  
+001982r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+001986r 1  FF FF FF FF  
+00198Ar 1  FF FF FF FF  
+001992r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+001996r 1  FF FF FF FF  
+00199Ar 1  FF FF FF FF  
+0019A2r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+0019A6r 1  FF FF FF FF  
+0019AAr 1  FF FF FF FF  
+0019B2r 1  7F 7F 7F 7F  .byte  $7F,$7F,$7F,$7F,$7F,$7F,$7F,$7F,$BF,$BF,$BF,$BF,$BF,$BF,$BF,$DF
+0019B6r 1  7F 7F 7F 7F  
+0019BAr 1  BF BF BF BF  
+0019C2r 1  DF DF DF DF  .byte  $DF,$DF,$DF,$DF,$DF,$DF,$DF,$EF,$EF,$EF,$EF,$EF,$EF,$6F,$6F,$6F
+0019C6r 1  DF DF DF EF  
+0019CAr 1  EF EF EF EF  
+0019D2r 1  6F 6F 6F 6F  .byte  $6F,$6F,$6F,$6F,$6F,$6F,$EF,$EF,$EF,$EF,$EF,$EF,$DF,$DF,$DF,$DF
+0019D6r 1  6F 6F EF EF  
+0019DAr 1  EF EF EF EF  
+0019E2r 1  DF DF DF DF  .byte  $DF,$DF,$DF,$DF,$DF,$DF,$DF,$DF,$DF,$DF,$DF,$BF,$BF,$BF,$BF,$BF
+0019E6r 1  DF DF DF DF  
+0019EAr 1  DF DF DF BF  
+0019F2r 1  BF BF BF BF  .byte  $BF,$BF,$BF,$BF,$BF,$BF,$7F,$7F,$7F,$7F,$7F,$7F,$7F,$FF,$FF,$FF
+0019F6r 1  BF BF 7F 7F  
+0019FAr 1  7F 7F 7F 7F  
+001A02r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+001A06r 1  FF FF FF FF  
+001A0Ar 1  FF FF FF FF  
+001A12r 1  FF FF FF FF  .byte  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+001A16r 1  FF FF FF FF  
+001A1Ar 1  FF FF FF FF  
+001A22r 1  FF FF DF EF  .byte  $FF,$FF,$DF,$EF,$FF,$4B,$97,$8B,$5D,$8B,$FF,$5B,$55,$11,$55,$55
+001A26r 1  FF 4B 97 8B  
+001A2Ar 1  5D 8B FF 5B  
+001A32r 1  00 00 00 00  .byte  $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+001A36r 1  00 00 00 00  
+001A3Ar 1  00 00 00 00  
+001A42r 1  00 00 00 00  .byte  $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+001A46r 1  00 00 00 00  
+001A4Ar 1  00 00 00 00  
+001A52r 1  00 00 00 00  .byte  $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+001A56r 1  00 00 00 00  
+001A5Ar 1  00 00 00 00  
+001A62r 1  00 00 00 00  .byte  $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+001A66r 1  00 00 00 00  
+001A6Ar 1  00 00 00 00  
+001A72r 1  00 00 00 00  .byte  $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+001A76r 1  00 00 00 00  
+001A7Ar 1  00 00 00 00  
+001A82r 1  00 00 00 00  .byte  $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+001A86r 1  00 00 00 00  
+001A8Ar 1  00 00 00 00  
+001A92r 1  00 00 00 00  .byte  $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+001A96r 1  00 00 00 00  
+001A9Ar 1  00 00 00 00  
+001AA2r 1  00 00 00 00  .byte  $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+001AA6r 1  00 00 00 00  
+001AAAr 1  00 00 00 00  
+001AB2r 1  00 00 00 00  .byte  $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+001AB6r 1  00 00 00 00  
+001ABAr 1  00 00 00 00  
+001AC2r 1  00 00 00 00  .byte  $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+001AC6r 1  00 00 00 00  
+001ACAr 1  00 00 00 00  
+001AD2r 1  00 00 00 00  .byte  $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+001AD6r 1  00 00 00 00  
+001ADAr 1  00 00 00 00  
+001AE2r 1  00 00 00 00  .byte  $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+001AE6r 1  00 00 00 00  
+001AEAr 1  00 00 00 00  
+001AF2r 1  00 00 00 00  .byte  $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+001AF6r 1  00 00 00 00  
+001AFAr 1  00 00 00 00  
+001B02r 1  00 00 00 00  .byte  $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+001B06r 1  00 00 00 00  
+001B0Ar 1  00 00 00 00  
+001B12r 1  00 00 00 00  .byte  $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+001B16r 1  00 00 00 00  
+001B1Ar 1  00 00 00 00  
+001B22r 1  00 00 00 00  .byte  $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+001B26r 1  00 00 00 00  
+001B2Ar 1  00 00 00 00  
+001B32r 1               
+001B32r 1               screen_data2:
+001B32r 1               
+001B32r 1  10 1C 28 34  .byte  $10,$1C,$28,$34,$40,$4C,$58,$64
+001B36r 1  40 4C 58 64  
+001B3Ar 1  70 7C 88 94  .byte  $70,$7C,$88,$94,$A0,$AC,$B8,$C4
+001B3Er 1  A0 AC B8 C4  
+001B42r 1  D0 DC E8 F4  .byte  $D0,$DC,$E8,$F4,$11,$1D,$29,$35
+001B46r 1  11 1D 29 35  
+001B4Ar 1  41 4D 59 65  .byte  $41,$4D,$59,$65,$71,$7D,$89,$95
+001B4Er 1  71 7D 89 95  
+001B52r 1  A1 AD B9 C5  .byte  $A1,$AD,$B9,$C5,$D1,$DD,$E9,$F5
+001B56r 1  D1 DD E9 F5  
+001B5Ar 1  12 1E 2A 36  .byte  $12,$1E,$2A,$36,$42,$4E,$5A,$66
+001B5Er 1  42 4E 5A 66  
+001B62r 1  72 7E 8A 96  .byte  $72,$7E,$8A,$96,$A2,$AE,$BA,$C6
+001B66r 1  A2 AE BA C6  
+001B6Ar 1  D2 DE EA F6  .byte  $D2,$DE,$EA,$F6,$13,$1F,$2B,$37
+001B6Er 1  13 1F 2B 37  
+001B72r 1  43 4F 5B 67  .byte  $43,$4F,$5B,$67,$73,$7F,$8B,$97
+001B76r 1  73 7F 8B 97  
+001B7Ar 1  A3 AF BB C7  .byte  $A3,$AF,$BB,$C7,$D3,$DF,$EB,$F7
+001B7Er 1  D3 DF EB F7  
+001B82r 1  14 20 2C 38  .byte  $14,$20,$2C,$38,$44,$50,$5C,$68
+001B86r 1  44 50 5C 68  
+001B8Ar 1  74 80 8C 98  .byte  $74,$80,$8C,$98,$A4,$B0,$BC,$C8
+001B8Er 1  A4 B0 BC C8  
+001B92r 1  D4 E0 EC F8  .byte  $D4,$E0,$EC,$F8,$15,$21,$2D,$39
+001B96r 1  15 21 2D 39  
+001B9Ar 1  45 51 5D 69  .byte  $45,$51,$5D,$69,$75,$81,$8D,$99
+001B9Er 1  75 81 8D 99  
+001BA2r 1  A5 B1 BD C9  .byte  $A5,$B1,$BD,$C9,$D5,$E1,$ED,$F9
+001BA6r 1  D5 E1 ED F9  
+001BAAr 1  16 22 2E 3A  .byte  $16,$22,$2E,$3A,$46,$52,$5E,$6A
+001BAEr 1  46 52 5E 6A  
+001BB2r 1  76 82 8E 9A  .byte  $76,$82,$8E,$9A,$A6,$B2,$BE,$CA
+001BB6r 1  A6 B2 BE CA  
+001BBAr 1  D6 E2 EE FA  .byte  $D6,$E2,$EE,$FA,$17,$23,$2F,$3B
+001BBEr 1  17 23 2F 3B  
+001BC2r 1  47 53 5F 6B  .byte  $47,$53,$5F,$6B,$77,$83,$8F,$9B
+001BC6r 1  77 83 8F 9B  
+001BCAr 1  A7 B3 BF CB  .byte  $A7,$B3,$BF,$CB,$D7,$E3,$EF,$FB
+001BCEr 1  D7 E3 EF FB  
+001BD2r 1  18 24 30 3C  .byte  $18,$24,$30,$3C,$48,$54,$60,$6C
+001BD6r 1  48 54 60 6C  
+001BDAr 1  78 84 90 9C  .byte  $78,$84,$90,$9C,$A8,$B4,$C0,$CC
+001BDEr 1  A8 B4 C0 CC  
+001BE2r 1  D8 E4 F0 FC  .byte  $D8,$E4,$F0,$FC,$19,$25,$31,$3D
+001BE6r 1  19 25 31 3D  
+001BEAr 1  49 55 61 6D  .byte  $49,$55,$61,$6D,$79,$85,$91,$9D
+001BEEr 1  79 85 91 9D  
+001BF2r 1  A9 B5 C1 CD  .byte  $A9,$B5,$C1,$CD,$D9,$E5,$F1,$FD
+001BF6r 1  D9 E5 F1 FD  
+001BFAr 1  1A 26 32 3E  .byte  $1A,$26,$32,$3E,$4A,$56,$62,$6E
+001BFEr 1  4A 56 62 6E  
+001C02r 1  7A 86 92 9E  .byte  $7A,$86,$92,$9E,$AA,$B6,$C2,$CE
+001C06r 1  AA B6 C2 CE  
+001C0Ar 1  DA E6 F2 FE  .byte  $DA,$E6,$F2,$FE,$1B,$27,$33,$3F
+001C0Er 1  1B 27 33 3F  
+001C12r 1  4B 57 63 6F  .byte  $4B,$57,$63,$6F,$7B,$87,$93,$9F
+001C16r 1  7B 87 93 9F  
+001C1Ar 1  AB B7 C3 CF  .byte  $AB,$B7,$C3,$CF,$DB,$E7,$F3,$FF
+001C1Er 1  DB E7 F3 FF  
+001C22r 1               
+001C22r 1               colour_data2:
+001C22r 1               
+001C22r 1  07 07 07 07  .byte  $07,$07,$07,$07,$07,$0B,$07,$0B
+001C26r 1  07 0B 07 0B  
+001C2Ar 1  0C 07 0A 0A  .byte  $0C,$07,$0A,$0A,$07,$0D,$07,$07
+001C2Er 1  07 0D 07 07  
+001C32r 1  07 07 07 07  .byte  $07,$07,$07,$07,$07,$07,$07,$0B
+001C36r 1  07 07 07 0B  
+001C3Ar 1  0B 0B 0B 0C  .byte  $0B,$0B,$0B,$0C,$0D,$0D,$0D,$0A
+001C3Er 1  0D 0D 0D 0A  
+001C42r 1  0A 05 0D 07  .byte  $0A,$05,$0D,$07,$07,$07,$07,$07
+001C46r 1  07 07 07 07  
+001C4Ar 1  07 07 0B 03  .byte  $07,$07,$0B,$03,$03,$03,$0B,$0F
+001C4Er 1  03 03 0B 0F  
+001C52r 1  0F 0F 0D 0D  .byte  $0F,$0F,$0D,$0D,$0D,$0C,$0D,$0D
+001C56r 1  0D 0C 0D 0D  
+001C5Ar 1  0D 07 07 07  .byte  $0D,$07,$07,$07,$07,$07,$0B,$03
+001C5Er 1  07 07 0B 03  
+001C62r 1  03 03 0B 09  .byte  $03,$03,$0B,$09,$09,$0F,$0F,$0F
+001C66r 1  09 0F 0F 0F  
+001C6Ar 1  0F 0A 0D 0D  .byte  $0F,$0A,$0D,$0D,$0D,$0B,$0B,$07
+001C6Er 1  0D 0B 0B 07  
+001C72r 1  07 07 03 03  .byte  $07,$07,$03,$03,$03,$03,$0B,$0F
+001C76r 1  03 03 0B 0F  
+001C7Ar 1  0F 0F 0F 0F  .byte  $0F,$0F,$0F,$0F,$0F,$0A,$0A,$07
+001C7Er 1  0F 0A 0A 07  
+001C82r 1  07 03 0B 07  .byte  $07,$03,$0B,$07,$07,$0B,$03,$03
+001C86r 1  07 0B 03 03  
+001C8Ar 1  03 03 0B 0A  .byte  $03,$03,$0B,$0A,$0F,$0F,$0F,$0F
+001C8Er 1  0F 0F 0F 0F  
+001C92r 1  07 07 02 07  .byte  $07,$07,$02,$07,$07,$03,$0B,$07
+001C96r 1  07 03 0B 07  
+001C9Ar 1  07 0B 03 03  .byte  $07,$0B,$03,$03,$03,$03,$03,$0B
+001C9Er 1  03 03 03 0B  
+001CA2r 1  0B 0B 0F 0F  .byte  $0B,$0B,$0F,$0F,$0F,$0A,$02,$0F
+001CA6r 1  0F 0A 02 0F  
+001CAAr 1  0F 0C 0C 07  .byte  $0F,$0C,$0C,$07,$07,$0B,$03,$03
+001CAEr 1  07 0B 03 03  
+001CB2r 1  03 03 03 03  .byte  $03,$03,$03,$03,$03,$03,$0B,$0F
+001CB6r 1  03 03 0B 0F  
+001CBAr 1  0F 0A 02 0C  .byte  $0F,$0A,$02,$0C,$0C,$0C,$0E,$07
+001CBEr 1  0C 0C 0E 07  
+001CC2r 1  07 07 03 03  .byte  $07,$07,$03,$03,$03,$03,$03,$03
+001CC6r 1  03 03 03 03  
+001CCAr 1  03 03 03 0B  .byte  $03,$03,$03,$0B,$0A,$02,$02,$0C
+001CCEr 1  0A 02 02 0C  
+001CD2r 1  0C 0E 0E 07  .byte  $0C,$0E,$0E,$07,$07,$07,$0B,$03
+001CD6r 1  07 07 0B 03  
+001CDAr 1  03 03 03 03  .byte  $03,$03,$03,$03,$03,$03,$03,$03
+001CDEr 1  03 03 03 03  
+001CE2r 1  0A 02 02 0C  .byte  $0A,$02,$02,$0C,$0E,$0E,$07,$07
+001CE6r 1  0E 0E 07 07  
+001CEAr 1  07 07 07 0B  .byte  $07,$07,$07,$0B,$03,$03,$03,$03
+001CEEr 1  03 03 03 03  
+001CF2r 1  03 03 03 0B  .byte  $03,$03,$03,$0B,$0A,$0A,$02,$0C
+001CF6r 1  0A 0A 02 0C  
+001CFAr 1  0E 0E 07 07  .byte  $0E,$0E,$07,$07,$07,$07,$07,$0B
+001CFEr 1  07 07 07 0B  
+001D02r 1  03 03 03 03  .byte  $03,$03,$03,$03,$03,$0B,$0B,$0A
+001D06r 1  03 0B 0B 0A  
+001D0Ar 1  02 02 02 0E  .byte  $02,$02,$02,$0E,$0E,$07,$07,$07
+001D0Er 1  0E 07 07 07  
+001D12r 1  00           .byte  $00
+001D12r 1               

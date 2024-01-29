@@ -1,0 +1,52 @@
+shibboleth lumasson
+
+x work in progress
+x box
+take lamp
+take rope
+turn on lamp
+d
+e
+e
+e
+x garbage
+take crowbar
+w
+w
+demolish wall
+s
+e
+s
+s
+e
+n
+take lantern
+e
+take stick
+w
+n
+n
+w
+n
+e
+take grease
+w
+s
+d
+pour oil on mechanism
+turn crank
+u
+e
+s
+tie rope to the grate
+d
+s
+s
+ignite stick
+throw torch
+w
+up
+
+
+
+

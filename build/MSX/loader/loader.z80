@@ -1,0 +1,70 @@
+
+include "msx.inc"
+
+org 0x8000
+
+loader:
+	ld a, 2
+	call CHGMOD
+
+	call DISSCR
+
+	ld a, 1
+	ld (FORCLR), a
+	ld (BAKCLR), a
+	ld (BDRCLR), a
+	call CHGCLR
+
+        ld hl, image
+        ld de, loader_end
+        call depack
+
+	ld hl, loader_end + 7
+	ld de, 0
+	ld bc, 256 * 8
+	call LDIRVM
+
+	ld hl, loader_end + 7 + 256 * 8
+	ld de, 256 * 8
+	ld bc, 256 * 8
+	call LDIRVM
+
+	ld hl, loader_end + 7 + 256 * 8 * 2
+	ld de, 256 * 8 * 2
+	ld bc, 256 * 8
+	call LDIRVM
+
+	ld hl, loader_end + 7 + 8192
+	ld de, 0x2000
+	ld bc, 256 * 8
+	call LDIRVM
+
+	ld hl, loader_end + 7 + 8192 + 256 * 8
+	ld de, 0x2000 + 256 * 8
+	ld bc, 256 * 8
+	call LDIRVM
+
+	ld hl, loader_end + 7 + 8192 + 256 * 8 * 2
+	ld de, 0x2000 + 256 * 8 * 2
+	ld bc, 256 * 8
+	call LDIRVM
+
+	call ENASCR
+
+        ld hl, stage2
+        ld de, 0xf200
+        ld bc, image - stage2
+        ldir
+
+        jp 0xf200
+
+include "aplib.z80"
+
+stage2:
+incbin "stage2.bin"
+
+image:
+incbin "screen2.bin"
+
+loader_end:
+

@@ -1,0 +1,67 @@
+shibboleth fanfaluch
+
+talk father
+show letter to father
+take car
+s
+s
+talk to Temistocle
+
+n
+n
+e
+e
+s
+s
+s
+
+n
+n
+n
+e
+e
+take tram
+
+
+
+w
+w
+n
+e
+try Fibonacci
+n
+x statue
+up
+x corpse
+search girder
+take fascicule
+down
+s
+w
+s
+w
+w
+drive car
+read telegram
+drive car
+e
+s
+talk with Antonia
+
+
+n
+w
+s
+e
+e
+talk to librarian
+read book
+w
+w
+n
+n
+e
+s
+talk to Antonia
+
+

@@ -1,0 +1,47 @@
+Changes in version 1.1
+----------------------
+
+[FIXED] In general, when "use" is employed and it is not recognised as a synonim of a more precise action, the game should issue the message "Try a more specific action."
+[FIXED] In general, jumping at a certain part with passwords does not reset counters and flags.
+[FIXED] Adjust the hint system.
+[FIXED] Dropping an object non in inventory yields "You don't have that with you!" then "Okay" (bug in AWS2C)
+
+Part 1:
+-----
+[FIXED] - There's a minor glitch in the interaction with the Harbour Authority officer. Not properly a bug, but after succeeding in the correspondent puzzle, when solicited, the game suggests you the same behaviour again and again (should be something like "you already did it" instead).
+[FIXED] - It would be nice to say "The ink is not of the right colour" at the emporium when you try to search for something to write the falsified order.
+[FIXED] - If you try to buy something in the emporium, the game suggests to speak to the clerk.
+[FIXED] - If you try to give money to the clerk, the game suggests to speak to her, instead.
+[ALREADY WORKING] - Implement "Visit 12" as a synonym of "Search 12" in Piazza Acquaverde.
+[FIXED] - Add a moderate quantity of money in the inventory, to indicate you can buy things.
+[FIXED] - Go to 12 recognized as a synonim of "search 12" to find Rovelli's place.
+[FIXED] - Perhaps allow `card` as an alias for `brochure` when opening the door. It's possible, as no confusion with Rovelli's address card can be done at this point of the game.
+[FIXED] - "The clerk recognises you and waves a hand," -> "The clerk waves a hand,"
+[FIXED] - `paying one of the best hotels` --could do with a `for`-> `paying for one of the best hotels`
+[FIXED] - Dustbin -> Wastebin
+[FIXED] - Remove word HEADED with code 32 (same as WASTEBIN)
+[FIXED] - "write letter" yields "You'd need something to write on..." instead of "You'd need something to write..." after you find the quill (opened the door)
+
+Part 2:
+-----
+[FIXED] - In part 2 there is a bug: it seems that you can search the fascicule multiple times among the girders and it magically comes back to that place...
+[FIXED] - Implement "drive home" to get to the Crocetta from Piazza Castello.
+[FIXED] - "You know, your father can give you good hints." -> "You know, your father can *still* give you good hints."
+[FIXED] - Provide a message for "repair book" when one has the fascicule: better to show that to a specialist! 
+
+Part 3:
+-----
+[FIXED] - Implement "Use crowbar on wall" and similar things to break the wall in the sewer.
+[FIXED] - If you try to demolish the wall several times, the game lets you repeat the action.
+[FIXED] - Not really a bug, but "centuries ago" is repeated twice in the description of the "Pile of skulls chamber."
+[FIXED] - Implement message "You are here to find the sandals" when you try to drive the car.
+[FIXED] - In sewer, `walk on its side` might be better as `walk along its side`
+[WON'T FIX] - Down the manhole - after using lantern oil on mechanism `pull lever` starts mechanism - but `lever` has not been mentioned
+[FIXED] - Provide a message for "use the greasy stick with the mechanism" down the manhole.
+[FIXED] - Put stick yields "You don't have that with you" even if the "greasy stick" is in your inventory.
+
+Part 4:
+-----
+[FIXED] - If you smell inside of the villa, you still get the awful smell of sewers.
+[FIXED] - "We'd better get out of here immediately." -> "You'd better get out of here immediately."
+[FIXED] - If you push the wall multiple times the same message is repeated.
