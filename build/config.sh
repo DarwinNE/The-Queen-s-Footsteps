@@ -19,7 +19,8 @@ pp="/Users/davidebucci/Desktop/Synchronized/Vintage/Computing/Amstrad/CPC/cpc-ma
 mkcas="/Users/davidebucci/Desktop/Synchronized/Vintage/Computing/Amstrad/mkcas/mkcas.py"
 
 # Full filename of Apple Commander (it requires Java)
-acjarfile="/Users/davidebucci/Desktop/Synchronized/Vintage/Computing/Apple/AppleII/AppleCommander-ac-1.6.0.jar"
+#acjarfile="/mnt/d/Users/hkzla/software/applecommander/AppleCommander-ac-13.0.jar"
+acjarfile="/Users/davidebucci/Desktop/Synchronized/Vintage/Computing/Apple/AppleII/AppleCommander-ac-13.0.jar"
 
 # Full filename of Atari disk tools
 ataritools="/Users/davidebucci/Desktop/Synchronized/Vintage/Computing/Atari/atari-tools/atr"
